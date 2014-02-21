@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<style>
+	table, td, th {
+		border: solid 1px #999;
+	}
+  .preview {
+    background-color: pink;
+  }
+	</style>
+</head>
+<body>
+	<h3>C104 JSOP Service API</h3>
+	<h4>Price table below</h4>
+	<div id="price_table_1"></div>
+	<script>
+	// This method allows asyncronous loading
+	// even if async="true" is not supported.
+	// http://stackoverflow.com/questions/1834077/which-browsers-support-script-async-async
+	//
+	// However, it may have difficulty with CMSs, so
+	// we also provide the simple (potentially blocking)
+	// version.
+	!function(d,s,h,id,ids){
+		var js,
+		    fjs=d.getElementsByTagName(s)[0],
+		    p=/^http:/.test(d.location)?'http':'https',
+		    jsid=id+"-js",
+		    pv=/[?&]preview=/.test(window.location.search)?'&pv=1':'';
+	  if(!d.getElementById(jsid)){
+	  	js=d.createElement(s);
+	  	js.id=jsid;
+	  	js.src=p+"://"+h+"/jsonp/price_table.php?ids="+ids+"&loc="+id+pv;
+	  	js.setAttribute('async', 'true');
+	  	fjs.parentNode.insertBefore(js,fjs);
+	  }
+	}(document,"script","localhost:8890","price_table_1","201234");</script>
+
+<!-- 
+	<script type="text/javascript" src="/jsonp/price_table.php?ids=201234&loc=price_table_1" async></script>
+-->
+<br />
+<br />
+
+	<table id="price_table_2">
+		<tr>
+			<th>Cat. No.</th>
+			<th>Description</th>
+			<th>Price</th>
+			<th>Package</th>
+		</tr>
+		<tr>
+			<td>201234</td>
+			<td>Good stuff!</td>
+			<td class="201234_x_price c104jsonp"></td>
+			<td class="201234_x_package c104jsonp"></td>
+		</tr>
+	</table>
+	<script>
+	  !function(d,s,h,id){
+	  	var es = d.getElementsByClassName('c104jsonp'),
+	  	    rs = [];
+	  	for (var i = 0; i < es.length; i++) {
+	  		var e = es[i];
+	  		var cs = e.getAttribute('class').split(' ');
+	  		for (var j = 0; j < cs.length; j++) {
+	  			if (cs[j].indexOf('_x_') != -1) {
+	  				rs.push(cs[j]);
+	  			}
+	  		}
+	  	}
+
+			var js,
+			    fjs=d.getElementsByTagName(s)[0],
+			    p=/^http:/.test(d.location)?'http':'https',
+			    jsid=id+"-js",
+			    pv=/[?&]preview=/.test(window.location.search)?'&pv=1':'';
+		  if(!d.getElementById(jsid)){
+		  	js=d.createElement(s);
+		  	js.id=jsid;
+		  	js.src=p+"://"+h+"/jsonp/ddh/cell.php?reqs="+rs+pv;
+		  	js.setAttribute('async', 'true');
+		  	fjs.parentNode.insertBefore(js,fjs);
+		  }
+
+	  }(document,"script","localhost:8890","cell-1");
+	</script>
+</body>
+</html>
