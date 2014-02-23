@@ -10,6 +10,10 @@ require_once(dirname(__FILE__).'/../config.php');
 // Configuration & initialization
 ////////////////////////////////////////////////
 $cache_directory = dirname(__FILE__).'/../tmp/cache/';
+if (ini_get('magic_quotes_gpc')) {
+  error_log ("Configuration error: magic_quotes_gpc is not disabled!. Disable in .htaccess");
+  die(ini_get('magic_quotes_gpc'));
+}
 
 /////////////////////////////////////////////////
 /// Functions to retrieve data from the CSV files
