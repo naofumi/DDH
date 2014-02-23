@@ -1,4 +1,5 @@
 <?php
+$bench_start = microtime(true);
 
 require_once(__DIR__.'/../Cache/Lite.php');
 require_once(__DIR__.'/data_source.php');
@@ -151,16 +152,22 @@ function cache_start($data_source) {
 	if ($cache = cache_obj()->get(cache_key($data_source))) {
     error_log("Served from cache.");
 	  echo $cache;
+    global $bench_start;
+    $bench_time = microtime(true) - $bench_start;
+    error_log("Total time $bench_time secs.");
 	  exit;
 	}	
   ob_start();
 }
 
 function cache_end() {
+  global $bench_start;
   $output = ob_get_contents();
   ob_end_clean();
 	cache_obj()->save($output);	
   echo $output;
+  $bench_time = microtime(true) - $bench_start;
+  error_log("Total time $bench_time secs.");
 }
 
 //////////////////////////////////////////////////////////
