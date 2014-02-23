@@ -299,6 +299,22 @@ function array_lookup ($array, $key) {
   return $array[$key];
 }
 
+// Shim for `str_getcsv` which isn't available
+// for PHP 5.2 and lower.
+// http://stackoverflow.com/questions/13430120/str-getcsv-alternative-for-older-php-version-gives-me-an-empty-array-at-the-e
+if (!function_exists('str_getcsv')) {
+  function str_getcsv ($string) {
+    $fh = fopen('php://temp', 'r+');
+    fwrite($fh, $string);
+    rewind($fh);
+
+    $row = fgetcsv($fh);
+
+    fclose($fh);
+    return $row;
+  }
+}
+
 // These are required last because they depend on the above functions.
 require_once(dirname(__FILE__).'/view_helpers.php');
 require_once(dirname(__FILE__).'/data_augmenters.php');
