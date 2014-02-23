@@ -38,7 +38,7 @@ class QueriedDataSourceBase extends DataSource {
       foreach($this->source_parameters as $source_id => $source_attr) {
         if ($source_id == $this->query_target)
           continue;
-        update_from_source_id($source_id);
+        $this->update_from_source_id($source_id);
       }
       uasort($this->data, array($this, "sort_callback"));
     }

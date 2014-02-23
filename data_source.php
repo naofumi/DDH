@@ -32,7 +32,7 @@ class DataSource {
 		if (!isset($this->data)){
 			$this->data = array();
 			foreach(array_keys($this->source_parameters) as $source_id) {
-				update_from_source_id($source_id);
+				$this->update_from_source_id($source_id);
 			}			
 			if (method_exists($this, "sort_callback")) {
 				uasort($this->data, array($this, "sort_callback"));

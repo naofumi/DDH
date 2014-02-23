@@ -7,6 +7,7 @@ require_once(__DIR__.'/queried_data_source_base.php');
 // array('field_name' => 'query_keyword', 'field_name' => 'query_keyword', ...)
 //
 // The filter will be an AND on each key=>value set.
+// `value` must exactly match query.
 class QueriedDataSource extends QueriedDataSourceBase {
   // Read the CSV file and collect all
   // rows that match the egrep regex for the $ids.
