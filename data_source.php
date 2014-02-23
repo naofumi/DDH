@@ -6,9 +6,9 @@ class DataSourceBase {
 	public $preview_directory;
 	public $current_directory;
 	public $previous_directory;
-	private $data;
-	private $ids;
-	private $rowspanable;
+	protected $data;
+	protected $ids;
+	protected $rowspanable;
 
 	function __construct($source_parameters, $ids = array()) {
 		$this->source_parameters = $source_parameters;
@@ -19,34 +19,41 @@ class DataSourceBase {
 	}
 
 	// Return a hash for the data source. 
+	// The ids are searched in all sources and joined together.
 	// Keys are the $ids, and the values are DataRow objects.
-	public function retrieve_data() {
+	protected function retrieve_data() {
 		if (!isset($this->data)){
 			$all = array();
 			foreach($this->source_parameters as $source_id => $source_attr) {
-				if (is_preview()) {
-					$path = $this->preview_directory.$source_attr['filename'];
-				} else {
-					$path = $this->current_directory.$source_attr['filename'];
-				}
+				$path = $this->path_for_source($source_id);
 
 				$assoc_list = $this->get_assoc_list_for_ids($this->ids, $path, $source_attr['fields'], $source_attr['encoding']);
-				foreach($assoc_list as $id => $values) {
-					if (!isset($all[$id]))
-						// $all[$id] = array(); 
-						$all[$id] = new DataRow();
-					foreach($values as $field => $value) {
-						// $all[$id][$field] = $value;
-						$all[$id]->set($field, $value);
-					}
-				}
+				$this->update_data_from_assoc_list($assoc_list);
 			}			
 			$this->data = $all;
 		}
-		// foreach($all as $id => $value) {
-		// 	$all[$id] = $this->augment_data_source($value);
-		// }
 	}
+
+	protected function path_for_source($source_id) {
+	  if (is_preview()) {
+	    $directory = $this->preview_directory;
+	  } else {
+	    $directory = $this->current_directory;
+	  }
+	  return $directory.$this->source_parameters[$source_id]['filename'];
+	}
+
+	protected function update_data_from_assoc_list($assoc_list) {
+	  foreach($assoc_list as $id => $values) {
+	    if (!isset($this->data[$id]))
+	      $this->data[$id] = new DataRow();
+	    foreach($values as $field => $value) {
+	      $this->data[$id]->set($field, $value);
+	    }
+	  }    
+	}
+
+
 
 	public function ids(){
 		$this->retrieve_data();
@@ -148,7 +155,7 @@ class DataSourceBase {
 	// TODO: Writing the $source each time is a pain.
 	//       We should write once only in the config file.
 	//
-	private function convert_row_to_assoc_list($row, $field_names) {
+	protected function convert_row_to_assoc_list($row, $field_names) {
 		$result = array();
 		for ($i = 0; $i < count($field_names); $i++) {
 			$value = isset($row[$i]) ? $row[$i] : null;
@@ -167,7 +174,7 @@ class DataSourceBase {
 	// Matching is not strict for performance reasons
 	// but you can reanalyze the results if more
 	// accuracy is needed.
-	private function get_rows_for_ids($ids, $source, $encoding){
+	protected function get_rows_for_ids($ids, $source, $encoding){
 		if (!$ids)
 			return array();
 	  $result = array();
@@ -185,7 +192,7 @@ class DataSourceBase {
 	}
 
 	// Get data as an associated list from a single source
-	private function get_assoc_list_for_ids($ids, $source, $field_names, $encoding) {
+	protected function get_assoc_list_for_ids($ids, $source, $field_names, $encoding) {
 		$rows = $this->get_rows_for_ids($ids, $source, $encoding);
 		$result = array();
 		foreach ($rows as $row) {
@@ -195,7 +202,7 @@ class DataSourceBase {
 	}
 
 	// Convert each cell in the row from $encoding to 'UTF-8'
-	private function row_convert_encoding($row, $encoding) {
+	protected function row_convert_encoding($row, $encoding) {
 		for($i = 0; $i < count($row); $i++) {
 			$row[$i] = mb_convert_encoding($row[$i], 'UTF-8', $encoding);
 		}
