@@ -1,6 +1,11 @@
 <?php
-// It is probably a good idea to further subclass this based on the
-// types of query we want to do (AND, OR, customized, etc.)
+// The QueriedDataSourceBase class allows us to set a $query targeted towards the CSV file
+// in $query_target. The $query is used to filter the ids after which additional data sources
+// will be joined.
+//
+// This class does not implement the actual filtering based on the $query. Subclass this 
+// and implement `get_csv_rows_for_query`, `confirm_assoc_list_matches_query` and
+// if necessary, `sort_callback` to actually use this class.
 class QueriedDataSourceBase extends DataSource {
   protected $query;
   protected $query_target;
@@ -26,70 +31,35 @@ class QueriedDataSourceBase extends DataSource {
     if (!isset($this->data)){
       $this->data = array();
 
-      // First get the data for the query_target
-      $source_attr = $this->source_parameters[$this->query_target];
-      $path = $this->path_for_source($this->query_target);
-      $assoc_list = $this->get_assoc_list_for_query($path, $source_attr['fields'], $source_attr['encoding']);
-      $this->update_data_from_assoc_list($assoc_list);
-      $ids = array_keys($this->data);
+      // First get the data for the query_target and set $this->ids
+      $this->update_by_query();
 
       // Join the other data sources
       foreach($this->source_parameters as $source_id => $source_attr) {
         if ($source_id == $this->query_target)
           continue;
-
-        $path = $this->path_for_source($source_id);
-        $assoc_list = $this->get_assoc_list_for_ids($ids, $path, $source_attr['fields'], $source_attr['encoding']);
-        $this->update_data_from_assoc_list($assoc_list);
+        update_from_source_id($source_id);
       }
       uasort($this->data, array($this, "sort_callback"));
-      // error_log('SHIT');
-      // error_log($this->cmp_in_array("AP", "Biotin",
-      //                          array("-", "AP", "Biotin", "Alexa 594")));
     }
   }
 
-  protected function sort_callback($a, $b) {
-    // return $this->strcasecmp_norm($a->get('label'), $b->get('label'));
-    return 100 * $this->cmp_in_array($a->get('label'), $b->get('label'),
-                               array("-", "AMCA", "Cy2", "DyLight 488", "Alexa 488", "FITC", "DyLight 549",
-                                     "Cy3", "Rhodamine(TRITC)", "RRX", "Texas Red",
-                                     "DyLight 594", "Alexa 594", "Alexa 647", "DyLight 649", "Cy5", 
-                                     "Biotin", "HRP", "AP", "4nm Gold")) +
-            10 * $this->strcasecmp_norm($a->get('label'), $b->get('label')) +
-            1 * $this->strcasecmp_norm($a->get('host'), $b->get('host'));
+  protected function update_by_query() {
+    $assoc_list = $this->get_assoc_list_for_query();
+    $this->update_data_from_assoc_list($assoc_list);
+    $this->ids = array_keys($assoc_list);
   }
 
-  protected function strcasecmp_norm($a, $b) {
-    return $this->cmp_norm(strcasecmp($a, $b));
-  }
+  // Get data as an associated list from a single source.
+  protected function get_assoc_list_for_query() {
+    $source_attr = $this->source_parameters[$this->query_target];
+    $path = $this->path_for_source($this->query_target);
 
-  protected function cmp_in_array($a, $b, $array) {
-    $a_pos = array_search($a, $array);
-    $b_pos = array_search($b, $array);
-    if ($a_pos === false)
-      $a_pos = 9999;
-    if ($b_pos === false)
-      $b_pos = 9999;
-    return $this->cmp_norm($a_pos - $b_pos);
-  }
-
-  protected function cmp_norm($cmp) {
-    if ($cmp > 0) {
-      return 1;
-    } else if ($cmp < 0) {
-      return -1;
-    } else {
-      return 0;
-    }    
-  }
-
-  // Get data as an associated list from a single source
-  protected function get_assoc_list_for_query($source, $field_names, $encoding) {
-    $rows = $this->get_rows_for_query($source, $encoding);
+    $csv_rows = $this->get_csv_rows_for_query($path, $source_attr['encoding']);
     $result = array();
-    foreach ($rows as $row) {
-      $assoc_list = $this->convert_row_to_assoc_list($row, $field_names);
+    foreach ($csv_rows as $row) {
+      $assoc_list = $this->convert_row_to_assoc_list($row, $source_attr['fields']);
+      // We double check because get_csv_rows_for_query is not optimized for accuracy
       if (!$this->confirm_assoc_list_matches_query($assoc_list))
         continue;
       $result[$row[0]] = $assoc_list;
@@ -104,7 +74,7 @@ class QueriedDataSourceBase extends DataSource {
   // and we don't check for exact matches.
   // We have to do a double check, which is easier after the
   // assoc_list is generated.
-  protected function get_rows_for_query($source, $encoding){
+  protected function get_csv_rows_for_query($source, $encoding){
     die('Must implement get_rows_for_query in subclass');
   }
 
@@ -112,22 +82,39 @@ class QueriedDataSourceBase extends DataSource {
     die('Must implement confirm_assoc_list_matches_query in subclass');
   }
 
+  // Returns the utf8 encoded query which may be necessary during query
+  // matching. The actualy query functions can chose to work with
+  // either the raw query string (which may be in any encoding specified in $this->query_encoding),
+  // or the utf8_encoded_query.
   protected function utf8_encoded_query() {
     if (!isset($this->utf8_encoded_query)) {
-      foreach(array_keys($this->query) as $key) {
-        $this->utf8_encoded_query[$key] = mb_convert_encoding($this->query[$key], 'UTF-8', $this->query_encoding);
-      }      
+      $this->utf8_encoded_query = $this->char_encoded_query('UTF-8');
     }
     return $this->utf8_encoded_query;
   }
 
-  // Reorder the $query hash by the order in the source_parameters.
-  // Filter out any parameters not in the source_parameters
+  protected function char_encoded_query($to) {
+    $result = array();
+    foreach(array_keys($this->query) as $key) {
+      $result[$key] = mb_convert_encoding($this->query[$key], $to, $this->query_encoding);
+    }    
+    return $result;
+  }
+
+  // Clean the query.
+  //
+  // 1. Reorder the $query hash by the order in the source_parameters.
+  // 2. Filter out any parameters not in the source_parameters.
+  // 3. Remove blank parameters
+  //
+  // This is important because of the way we use a Regex to 
+  // go through the CSV file. We run this in the constructer
+  // so that $this->query is "clean".
   protected function clean_query() {
     $result = array();
     $fields = $this->source_parameters[$this->query_target]['fields'];
     foreach ($fields as $field) {
-      if (isset($this->query[$field])) {
+      if (isset($this->query[$field]) && $this->query[$field] !== "") {
         $result[$field] = $this->query[$field];
       }
     }

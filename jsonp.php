@@ -3,6 +3,7 @@ $bench_start = microtime(true);
 
 require_once(__DIR__.'/../Cache/Lite.php');
 require_once(__DIR__.'/data_source.php');
+require_once(__DIR__.'/queried_data_source.php');
 require_once(__DIR__.'/../config.php');
 
 ////////////////////////////////////////////////

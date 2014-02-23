@@ -1,7 +1,10 @@
 <?php
 require_once(__DIR__.'/data_row.php');
 
-class DataSourceBase {
+// The DataSource class is the core class that allows us to
+// extract information from multiple CSV files and to join them.
+//
+class DataSource {
 	public $source_parameters;
 	public $preview_directory;
 	public $current_directory;
@@ -21,19 +24,30 @@ class DataSourceBase {
 	// Return a hash for the data source. 
 	// The ids are searched in all sources and joined together.
 	// Keys are the $ids, and the values are DataRow objects.
+	//
+	// If $this->sort_callback exists, then it is called to 
+	// sort the data.
+	// sort_callback($a, $b) should return an integer indicating sort order.
 	protected function retrieve_data() {
 		if (!isset($this->data)){
-			$all = array();
-			foreach($this->source_parameters as $source_id => $source_attr) {
-				$path = $this->path_for_source($source_id);
-
-				$assoc_list = $this->get_assoc_list_for_ids($this->ids, $path, $source_attr['fields'], $source_attr['encoding']);
-				$this->update_data_from_assoc_list($assoc_list);
+			$this->data = array();
+			foreach(array_keys($this->source_parameters) as $source_id) {
+				update_from_source_id($source_id);
 			}			
-			$this->data = $all;
+			if (method_exists($this, "sort_callback")) {
+				uasort($this->data, array($this, "sort_callback"));
+			}
 		}
 	}
 
+	// Update $this->data from $source_id for the ids in
+	// $this->ids
+	protected function update_from_source_id($source_id) {
+		$assoc_list = $this->get_assoc_list_for_ids($this->ids, $source_id);
+		$this->update_data_from_assoc_list($assoc_list);		
+	}
+
+	// Get the path for the CSV file corresponding to $source_id.
 	protected function path_for_source($source_id) {
 	  if (is_preview()) {
 	    $directory = $this->preview_directory;
@@ -43,6 +57,7 @@ class DataSourceBase {
 	  return $directory.$this->source_parameters[$source_id]['filename'];
 	}
 
+	// Update the data of this object from $assoc_list.
 	protected function update_data_from_assoc_list($assoc_list) {
 	  foreach($assoc_list as $id => $values) {
 	    if (!isset($this->data[$id]))
@@ -53,18 +68,19 @@ class DataSourceBase {
 	  }    
 	}
 
-
-
+	// Get all ids present in the data.
 	public function ids(){
 		$this->retrieve_data();
 		return array_keys($this->data);
 	}
 
+	// Get all rows in the data.
 	public function rows(){
 		$this->retrieve_data();
 		return array_values($this->data);
 	}
 
+	// Get row corresponding to $id.
 	public function row($id){
 		$this->retrieve_data();
 		return $this->data[$id];
@@ -90,6 +106,8 @@ class DataSourceBase {
 		return $last_updated_at;
 	}
 
+	// Check whether this column should have cells
+	// which span rows. This is set in the source_parameters.
 	public function rowspanable() {
 		if (isset($this->rowspanable)) {
 			return $this->rowspanable;			
@@ -149,6 +167,43 @@ class DataSourceBase {
 	}
 
 	/////////////////////////////////////////////////
+	// Functions for sorting
+	/////////////////////////////////////////////////
+
+	// The PHP strcasecmp function return value is not
+	// limited to -1, 0, 1, which makes it difficult to
+	// use when we have multiple sort criteria.
+	// strcasecmp_norm only returns -1, 0, 1.
+	protected function strcasecmp_norm($a, $b) {
+	  return $this->cmp_norm(strcasecmp($a, $b));
+	}
+
+	// Compares $a and $b based on their indices in
+	// $array. If they are not present, then they will 
+	// be sent to the end of the array.
+	protected function cmp_in_array($a, $b, $array) {
+	  $a_pos = array_search($a, $array);
+	  $b_pos = array_search($b, $array);
+	  if ($a_pos === false)
+	    $a_pos = 9999999;
+	  if ($b_pos === false)
+	    $b_pos = 9999999;
+	  return $this->cmp_norm($a_pos - $b_pos);
+	}
+
+	// Converts signed integer to -1, 0, 1
+	protected function cmp_norm($cmp) {
+	  if ($cmp > 0) {
+	    return 1;
+	  } else if ($cmp < 0) {
+	    return -1;
+	  } else {
+	    return 0;
+	  }    
+	}
+
+
+	/////////////////////////////////////////////////
 	/// Functions to retrieve data from the CSV files
 	/////////////////////////////////////////////////
 	//
@@ -182,6 +237,13 @@ class DataSourceBase {
 	  $lines = array();
 	  // Quickly filter the file with 'egrep'.
 	  // Careful optimization of the regex is important!
+	  // Use something like
+	  // time egrep '^\"?(?:899999)' /Applications/MAMP/htdocs/jsonp/data/large_pricelist.csv
+	  // to benchmark.
+	  // We don't use nkf here because it is not an issue
+	  // for the `id`s and nkf is much slower.
+	  // We don't bother with LANG=ASCII because there is
+	  // no difference in performance.
 	  exec("egrep '^\"?(?:$regexp)' $source", $lines);
 	  foreach ($lines as $line) {
 			$row = str_getcsv($line);
@@ -192,11 +254,14 @@ class DataSourceBase {
 	}
 
 	// Get data as an associated list from a single source
-	protected function get_assoc_list_for_ids($ids, $source, $field_names, $encoding) {
-		$rows = $this->get_rows_for_ids($ids, $source, $encoding);
+	private function get_assoc_list_for_ids($ids, $source_id) {
+		$rows = $this->get_rows_for_ids($ids, 
+		                                $this->path_for_source($source_id), 
+		                                $this->source_parameters[$source_id]['encoding']);
 		$result = array();
 		foreach ($rows as $row) {
-			$result[$row[0]] = $this->convert_row_to_assoc_list($row, $field_names);
+			$result[$row[0]] = $this->convert_row_to_assoc_list($row, 
+			                                                    $this->source_parameters[$source_id]['fields']);
 		}
 		return $result;
 	}

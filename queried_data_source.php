@@ -1,7 +1,12 @@
 <?php
 require_once(__DIR__.'/queried_data_source_base.php');
-// It is probably a good idea to further subclass this based on the
-// types of query we want to do (AND, OR, customized, etc.)
+
+// QueriedDataSource implement a DataSource that allows us to 
+// filter on the query target using a query that has the following syntax;
+//
+// array('field_name' => 'query_keyword', 'field_name' => 'query_keyword', ...)
+//
+// The filter will be an AND on each key=>value set.
 class QueriedDataSource extends QueriedDataSourceBase {
   // Read the CSV file and collect all
   // rows that match the egrep regex for the $ids.
@@ -10,29 +15,30 @@ class QueriedDataSource extends QueriedDataSourceBase {
   // and we don't check for exact matches.
   // We have to do a double check, which is easier after the
   // assoc_list is generated.
-  //
-  // We initially did egrep with the original source file in the original encoding.
-  // This however didn't work sometimes so we now use nkf to convert the file
-  // to utf-8, and then we do the egrep.
-  protected function get_rows_for_query($source, $encoding){
+  protected function get_csv_rows_for_query($source, $encoding){
     if (!$this->query)
       return array();
     $result = array();
-    
-    $encoding = "UTF-8";
-    // Encode the query into the same encoding as the source file.
-    foreach(array_keys($this->query) as $key) {
-      $source_encoded_query[$key] = mb_convert_encoding($this->query[$key], $encoding, $this->query_encoding);
-    }      
 
-    $regexp = implode(".*", array_values($source_encoded_query));
+    foreach(array_keys($this->query) as $key) {
+      // Convert encoding of query to match source CSV file encoding.
+      $encoded_query = $this->char_encoded_query($encoding);
+      $escaped_query[$key] = preg_quote($encoded_query[$key]);
+    }
+
+    $regexp = implode(".*", array_values($escaped_query));
     $lines = array();
     // Quickly filter the file with 'egrep'.
-    // Careful optimization of the regex is important!
-    // exec("egrep '(?:$regexp)' $source", $lines);
-    exec("/usr/local/bin/nkf -w $source | egrep '(?:$regexp)'", $lines);
-    error_log('Egrep REGEX');
+    // Using NKF is more robust then using "LANG=SJIS egrep"
+    // but performance suffers pretty bad on large files.
+    // exec("/usr/local/bin/nkf -w $source | egrep '(?:$regexp)'", $lines);
+    //
+    // We are currently using `"` for the quotes in the shell code.
+    // This is because we have "F(ab')2" type stuff. We should
+    // add code to escape quotes.
+    exec("LANG=".$encoding." egrep \"(?:$regexp)\" $source", $lines);
     error_log("egrep '(?:$regexp)' $source");
+    log_var_dump($lines);
     foreach ($lines as $line) {
       $row = str_getcsv($line);
       $row = $this->row_convert_encoding($row, $encoding);
