@@ -212,8 +212,8 @@ function echo_flash() {
 }
 
 function add_query_to_url($url, $params = array()) {
-	$original_query_string = parse_url($url)['query'];
-	$original_path = parse_url($url)['path'];
+	$original_query_string = array_lookup(parse_url($url), 'query');
+	$original_path = array_lookup(parse_url($url), 'path');
 	$original_params = array();
 	foreach(explode('&', $original_query_string) as $query_set) {
 		$single_param = explode('=', $query_set);
@@ -282,6 +282,21 @@ function str_var_dump($variable){
 
 function log_var_dump($variable){
 	error_log(str_var_dump($variable));
+}
+
+////////////////////////////////////////////
+// Utility functions
+///////////////////////////////////////////
+
+// PHP 5.3 cannot dereference arrays.
+// That is, it can't do
+//   function_that_returns_array()[3]
+//
+// This feature has been added in PHP 5.4, but to 
+// support PHP 5.3 use this function as follows;
+//   array_lookup(function_that_returns_array(), 3)
+function array_lookup ($array, $key) {
+  return $array[$key];
 }
 
 // These are required last because they depend on the above functions.
