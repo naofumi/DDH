@@ -23,3 +23,34 @@ function dasherize($string) {
   $lower = strtolower($string);
   return preg_replace("/(\W)/", "_", $lower);
 }
+
+function select_tag($name, $options = array(), $attributes = array()) {
+  echo "<select name=\"$name\"".attributes_string_from_hash($attributes).">";
+  $is_assoc_options = is_assoc($options);
+  echo "<option value=\"\"></option>";
+  foreach ($options as $value => $tag) {
+    if (!$is_assoc_options) {
+      $value = $tag;
+    }
+    if (isset($_GET[$name]) && $_GET[$name] === $value) {
+      $selected = " selected";
+    } else {
+      $selected = "";
+    }
+    echo "<option value=\"$value\"$selected>$tag</option>";
+  }
+  echo "</select>";
+}
+
+function attributes_string_from_hash($attributes) {
+  $attribute_string = "";
+  foreach($attributes as $name => $value) {
+    $attribute_string = $attribute_string." $name=\"$value\"";
+  }
+  return $attribute_string;  
+}
+
+// http://stackoverflow.com/questions/173400/php-arrays-a-good-way-to-check-if-an-array-is-associative-or-sequential
+function is_assoc($array) {
+  return (bool)count(array_filter(array_keys($array), 'is_string'));
+}
