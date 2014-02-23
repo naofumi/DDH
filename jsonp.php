@@ -13,19 +13,6 @@ $cache_directory = __DIR__.'/../tmp/cache/';
 /////////////////////////////////////////////////
 /// Functions to retrieve data from the CSV files
 /////////////////////////////////////////////////
-//
-// TODO: Writing the $source each time is a pain.
-//       We should write once only in the config file.
-//
-function convert_row_to_assoc_list($row, $field_names) {
-	$result = array();
-	for ($i = 0; $i < count($field_names); $i++) {
-		$value = isset($row[$i]) ? $row[$i] : null;
-		$result[$field_names[$i]] = $value;
-	}
-	// return array_combine($field_names, array_slice($row, 0, count($field_names)));
-	return $result;
-}
 
 function get_row_count($source) {
   return exec("wc -l < $source");
