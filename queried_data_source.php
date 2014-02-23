@@ -1,5 +1,5 @@
 <?php
-require_once(__DIR__.'/queried_data_source_base.php');
+require_once(dirname(__FILE__).'/queried_data_source_base.php');
 
 // QueriedDataSource implement a DataSource that allows us to 
 // filter on the query target using a query that has the following syntax;

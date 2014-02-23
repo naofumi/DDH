@@ -8,7 +8,7 @@
   // must match the format that we have specified in
   // the config file (filenames must be consistent).
   // Uploaded files are automatically 
-  require(__DIR__.'/jsonp.php');
+  require(dirname(__FILE__).'/jsonp.php');
 
   $preview_directory = dirname(__FILE__).'/../data/preview/';
   $current_directory = dirname(__FILE__).'/../data/current/';

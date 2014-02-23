@@ -1,15 +1,15 @@
 <?php
 $bench_start = microtime(true);
 
-require_once(__DIR__.'/../Cache/Lite.php');
-require_once(__DIR__.'/data_source.php');
-require_once(__DIR__.'/queried_data_source.php');
-require_once(__DIR__.'/../config.php');
+require_once(dirname(__FILE__).'/../Cache/Lite.php');
+require_once(dirname(__FILE__).'/data_source.php');
+require_once(dirname(__FILE__).'/queried_data_source.php');
+require_once(dirname(__FILE__).'/../config.php');
 
 ////////////////////////////////////////////////
 // Configuration & initialization
 ////////////////////////////////////////////////
-$cache_directory = __DIR__.'/../tmp/cache/';
+$cache_directory = dirname(__FILE__).'/../tmp/cache/';
 
 /////////////////////////////////////////////////
 /// Functions to retrieve data from the CSV files
@@ -300,8 +300,8 @@ function array_lookup ($array, $key) {
 }
 
 // These are required last because they depend on the above functions.
-require_once(__DIR__.'/view_helpers.php');
-require_once(__DIR__.'/data_augmenters.php');
+require_once(dirname(__FILE__).'/view_helpers.php');
+require_once(dirname(__FILE__).'/data_augmenters.php');
 
 ////////////////////////////////////////////////////////////
 // Initialize

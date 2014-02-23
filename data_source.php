@@ -1,5 +1,5 @@
 <?php
-require_once(__DIR__.'/data_row.php');
+require_once(dirname(__FILE__).'/data_row.php');
 
 // The DataSource class is the core class that allows us to
 // extract information from multiple CSV files and to join them.
