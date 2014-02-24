@@ -240,11 +240,12 @@ class DataSource {
 	  // Use something like
 	  // time egrep '^\"?(?:899999)' /Applications/MAMP/htdocs/jsonp/data/large_pricelist.csv
 	  // to benchmark.
-	  // We don't use nkf here because it is not an issue
-	  // for the `id`s and nkf is much slower.
-	  // We don't bother with LANG=ASCII because there is
-	  // no difference in performance.
-	  exec("egrep '^\"?(?:$regexp)' $source", $lines);
+	  // We don't do decoding of the $source because
+	  // 1. $ids are usually simple ASCII.
+	  // 2. We only need a small number of lines so converting them all is a waste.
+	  //
+	  // For more discussion on using egrep with encoding, take a look at queried_data_source.php
+	  exec("egrep '^\"?$regexp' $source", $lines);
 	  foreach ($lines as $line) {
 			$row = str_getcsv($line);
 			$row = $this->row_convert_encoding($row, $encoding);

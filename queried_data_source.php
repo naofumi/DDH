@@ -22,27 +22,48 @@ class QueriedDataSource extends QueriedDataSourceBase {
     $result = array();
 
     foreach(array_keys($this->query) as $key) {
-      // Convert encoding of query to match source CSV file encoding.
-      $encoded_query = $this->char_encoded_query($encoding);
+      // Convert encoding of query to "UTF-8".
+      $encoded_query = $this->char_encoded_query("UTF-8");
       $escaped_query[$key] = preg_quote($encoded_query[$key]);
     }
 
     $regexp = implode(".*", array_values($escaped_query));
     $lines = array();
     // Quickly filter the file with 'egrep'.
-    // Using NKF is more robust then using "LANG=SJIS egrep"
-    // but performance suffers pretty bad on large files.
-    // exec("/usr/local/bin/nkf -w $source | egrep '(?:$regexp)'", $lines);
+    // There are several ways to use this.
+    // One option is to use egrep with different encodings by
+    // using something like "LANG=SJIS egrep". The grep in Mavericks (grep (BSD grep) 2.5.1-FreeBSD)
+    // apparently works well with this, but the grep on my CentOS server (grep (GNU grep) 2.5.1)
+    // does not. Looking around the web, it seems that encoding support in grep is rather
+    // spotty. For GNU grep, LANG affects how character groups are treated, but it does not
+    // do character encoding.
     //
+    // This means that to support GNU grep, we have to convert encoding to UTF-8 prior to
+    // feeding to egrep. UTF-8 works fine with GNU egrep, probably due to the design
+    // of UTF-8 coding.
+    //
+    // We can use NKF or iconv for this. After a quick benckmark,
+    // iconv seems to be an order of magnitude faster than NKF. In fact
+    // piping iconv output to GNU egrep seems to be as fast as FreeBSD egrep.
+    //
+    // There are also other differences between FreeBSD grep and GNU grep.
+    // FreeBSD egrep seems to have more features (available syntaxes) than
+    // GNU egrep. On the other hand, FreeBSD grep does not have pcre.
+    // Therefore, we should keep the regex syntax rather simple.
+    // There is a good listing of available regex syntaxes here (http://www.kt.rim.or.jp/~kbk/regex/regex.html#EGREP).
+    //
+    // Another note.
     // We are currently using `"` for the quotes in the shell code.
     // This is because we have "F(ab')2" type stuff. We should
     // add code to escape quotes.
-    exec("LANG=".$encoding." egrep \"(?:$regexp)\" $source", $lines);
-    error_log("egrep '(?:$regexp)' $source");
-    log_var_dump($lines);
+    // exec("LANG=".$encoding." egrep \"(?:$regexp)\" $source", $lines);
+    // error_log("LANG=".$encoding." egrep \"(?:$regexp)\" $source");
+
+    error_log("iconv --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep \"$regexp\"");
+    exec("iconv --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep \"$regexp\"", $lines);
+
     foreach ($lines as $line) {
       $row = str_getcsv($line);
-      $row = $this->row_convert_encoding($row, $encoding);
       $result[$row[0]] = $row;
     }
     return $result;
