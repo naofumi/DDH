@@ -138,6 +138,10 @@ JS;
 }
 
 function cache_start($data_source) {
+  global $use_cache;
+  if (!$use_cache) {
+    return;
+  }
 	if (isset($_GET['no_cache']))
 		return;
 
@@ -153,6 +157,10 @@ function cache_start($data_source) {
 }
 
 function cache_end() {
+  global $use_cache;
+  if (!$use_cache) {
+    return;
+  }
   global $bench_start;
   $output = ob_get_contents();
   ob_end_clean();
