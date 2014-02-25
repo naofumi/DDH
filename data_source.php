@@ -208,6 +208,43 @@ class DataSource {
 	  }    
 	}
 
+  /////////////////////////////////////////////////
+  // Functions for getting facet information
+  /////////////////////////////////////////////////
+
+  // This returns the count of values for each $field in $fields.
+  //
+  // The returned value is
+  // array('field_name_1' => array('value_1_1' => [count for value_1_1 in field_name_1],
+  //                               'value_1_2' => [count for value_1_2 in field_name_1]...),
+  //       'field_name_2' => array('value_2_1' => [count for value_2_1 in field_name_2],
+  //                               'value_2_2' => [count for value_2_2 in field_name_2]...))
+  //
+  // Since it used $this->data as the data source, the
+  // facets are sorted in the same order as they would be 
+  // displayed.
+  public function facets($fields) {
+  	if (isset($this->facets)) {
+  		return $this->facets;
+  	} else {
+			$this->retrieve_data();
+	  	$result = array();
+	  	foreach($fields as $field) {
+	  		$result[$field] = array();
+	  	}
+	  	foreach ($this->data as $row) {
+	  		foreach($fields as $field) {
+	  			$value = $row->get($field);
+	  			if (!isset($result[$field][$value])) {
+	  				$result[$field][$value] = 0;
+	  			}
+	  			$result[$field][$value]++;
+	  		}
+	  	}
+	  	$this->facets = $result;
+	  	return $result;  		
+  	}
+  }
 
 	/////////////////////////////////////////////////
 	/// Functions to retrieve data from the CSV files
