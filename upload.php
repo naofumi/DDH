@@ -59,44 +59,43 @@
 <?php echo_flash(); ?>
 <fieldset>
   <legend>サーバ上にあるファイル</legend>
-  <table class="directory_view" style="width:100%">
-    <tr>
-      <th>Preview</th>
-      <th>Current</th>
-      <th>Previous</th>
-    </tr>
-    <tr>
-      <?php foreach ($directories as $directory): ?>
-        <td style="width: 33%;vertical-align:top;">
-          <?php foreach(scandir($directory) as $file): ?>
-            <?php if (substr(basename($file), 0, 1) === ".") {continue;} ?>
-            <div>
-              <?php echo basename($file); ?> <a href="<?php echo "preview.php?file=".basename($directory)."/$file" ?>">[確認]</a><br />
-              (<?php echo date("y-m-d H:i:s O", filemtime($directory.$file)) ?>)
-            </div>
-          <?php endforeach; ?>
-        </td>
-      <?php endforeach; ?>
-    </tr>
-  </table>
-</fieldset>
-<fieldset>
-  <legend>公開ステータスの変更</legend>
   <form method="post">
     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION["csrf_token"]?>">
-    <ol>
-      <li><input type=submit name="publish_preview" value="'Preview'のファイルを公開する"></li>
-      <li><input type=submit name="publish_rollback" value="'Previous'にある元のファイルにもどす"></li>
-    </ol>
+    <table class="directory_view" style="width:100%">
+      <tr>
+        <th>控え</th>
+        <th>現行</th>
+        <th>前回</th>
+      </tr>
+      <tr>
+        <?php foreach ($directories as $directory): ?>
+          <td>
+            <?php foreach(scandir($directory) as $file): ?>
+              <?php if (substr(basename($file), 0, 1) === ".") {continue;} ?>
+              <div class="file<? if (!in_array(basename($file), all_filenames())) {echo " greyed";} ?>">
+                <?php echo basename($file); ?> <a href="<?php echo "preview.php?file=".basename($directory)."/$file" ?>" class="preview_button">[内容確認]</a>
+                <div class="date">(更新: <?php echo date("Y-m-d H:i:s", filemtime($directory.$file)) ?>)</div>
+              </div>
+            <?php endforeach; ?>
+          </td>
+        <?php endforeach; ?>
+      </tr>
+      <tr class="publish_action_cells">
+        <td><input type=submit name="publish_preview" value="'控え'のファイルを公開 =>>"></td>
+        <td></td>
+        <td><input type=submit name="publish_rollback" value="<<= '前回'のファイルにもどす"></td>
+      </tr>
+    </table>
   </form>
 </fieldset>
 <fieldset>
-  <legend>新しいファイルを"Preview"にアップロード</legend>
-  ファイル名は
+  <legend>新しいファイルを"控え"にアップロード</legend>
+  <h3>注意</h3>
+  ファイル名を厳密に守らないと反映されません。<br />
   <?php foreach($source_parameters as $key => $value): ?>
-    "<?php echo $key ?>"は"<?php echo $value['filename']?>", 
+    "<?php echo $key ?>" のデータは "<?php echo $value['filename']?>"<br />
   <?php endforeach; ?>
-  にしてください。（それ以外のファイル名はアップロードされますが、無視されます）
+  にしてください。<br /><br />
 
   <!-- The data encoding type, enctype, MUST be specified as below -->
   <form enctype="multipart/form-data" action="" method="POST">

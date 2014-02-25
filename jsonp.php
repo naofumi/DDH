@@ -177,13 +177,14 @@ function publish_preview_files(){
 	global $current_directory;
 	global $preview_directory;
 	global $previous_directory;
-	global $source_data;
-	system('cp '.$current_directory.'* '.$previous_directory);
-	foreach($source_data as $key => $value) {
+	global $source_parameters;
+  // 'cp -p' preserves timestamps
+	system('cp -p '.$current_directory.'* '.$previous_directory);
+	foreach($source_parameters as $key => $value) {
 		$path = $preview_directory.$value['filename'];
 		$destination = $current_directory.$value['filename'];
 		if (file_exists($path)) {
-			rename($path, $destination);
+  		rename($path, $destination);
 		}
 		// If file exists in $path, then move it to
 		// $destination. (removing it from "preview")
@@ -196,8 +197,17 @@ function rollback_files(){
 	global $current_directory;
 	global $preview_directory;
 	global $previous_directory;
-	system('cp '.$current_directory.'* '.$preview_directory);
+	system('cp -p '.$current_directory.'* '.$preview_directory);
 	system('mv '.$previous_directory.'* '.$current_directory);
+}
+
+function all_filenames() {
+  global $source_parameters;
+  $result = array();
+  foreach($source_parameters as $key => $value){
+    array_push($result, $value['filename']);
+  }
+  return $result;
 }
 
 
@@ -249,7 +259,7 @@ function basic_auth(){
       return;
     }
   }
-  header('WWW-Authenticate: Basic realm="Restricted Area"');
+  header('WWW-Authenticate: Basic realm="DDH Admin Area"');
   header('HTTP/1.0 401 Unauthorized');
   header('Content-type: text/html; charset='.mb_internal_encoding());
   die("Authorization Failed.");

@@ -1,0 +1,110 @@
+html {
+  font-family: sans-serif;
+  font-size: 16px;
+  background-color: #FAFAFA;
+  color: #555;
+}
+a {
+  color: #123194;
+}
+a:visited {
+  color: #123194;
+}
+body {
+  min-width: 768px;
+  margin: 0;
+}
+h1, h2, h3 {
+  padding: 10px 0;
+  margin: 0;
+}
+h1 {
+  font-size: 20px;
+}
+h2 {
+  font-size: 18px;
+}
+h3 {
+  font-size: 16px;
+}
+
+legend {
+  padding: 0 15px;
+  color: #888;
+  font-style: italic;
+  font-size: 16px;
+}
+fieldset {
+  margin-bottom: 20px;
+  border: solid 1px #BBB;
+}
+
+table, td, th {
+  border: solid 1px #999;
+  border-bottom: none;
+  border-collapse: collapse;
+}
+
+.publish_action_cells td, .publish_action_cells th {
+  text-align: center;
+  border: solid 1px #999;
+  border-top: none;
+}
+
+.directory_view td {
+  background-color: #FFF;
+  padding: 5px;
+  width: 33%;
+  vertical-align:top;
+}
+.directory_view .date {
+  text-align:right;
+  font-size: 12px;
+}
+.directory_view th {
+  background-color: #DDD;
+}
+.directory_view .file {
+  border-bottom: 1px dotted #BBB;
+}
+
+.directory_view .file:first-child {
+  border-top: 1px dotted #BBB;
+}
+.preview_button {
+  margin-left: 10px;
+  font-size: 12px;
+}
+.greyed {
+  color: #BBB !important;
+}
+
+.top-bar {
+  background-color: #999999;
+}
+.top-bar h1{
+  color: #FFF;
+  padding: 10px 10px;
+}
+.content {
+  padding: 10px;
+}
+.footer {
+  text-align: center;
+  margin-top: 20px;
+}
+.castle104, .support_mail {
+  font-size: 18px;
+  color: #AAA;
+  font-family: serif;
+  font-style: italic;
+}
+.support_mail {
+  font-size: 14px;
+}
+.preview {
+  background-color: pink;
+}
+.notice {
+  border: solid 2px orange;
+}
