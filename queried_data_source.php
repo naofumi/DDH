@@ -59,8 +59,12 @@ class QueriedDataSource extends QueriedDataSourceBase {
     // exec("LANG=".$encoding." egrep \"(?:$regexp)\" $source", $lines);
     // error_log("LANG=".$encoding." egrep \"(?:$regexp)\" $source");
 
-    error_log("iconv --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep \"$regexp\"");
-    exec("iconv --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep \"$regexp\"", $lines);
+    $iconv_path = $GLOBALS["iconv_path"];
+    if (!$iconv_path) {
+      die ('$iconv_path is not set in config.php');
+    }
+    error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep \"$regexp\"");
+    exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep \"$regexp\"", $lines);
 
     foreach ($lines as $line) {
       $row = str_getcsv($line);
