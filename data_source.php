@@ -80,6 +80,12 @@ class DataSource {
 		return array_values($this->data);
 	}
 
+	// Get total row count.
+	public function total_rows(){
+		$this->retrieve_data();
+		return count($this->data);		
+	}
+
 	// Get row corresponding to $id.
 	public function row($id){
 		$this->retrieve_data();
