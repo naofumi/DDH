@@ -291,9 +291,14 @@ class DataSource {
 	  // exec("egrep '^\"?$regexp' $source", $lines);
 	  //
 	  // Update:
-	  // We now use perl instead of egrep as described in queried_data_source.php
-	  exec("perl -n -e 'print ".'$_'." if (".'$_'." =~ /^\"?($regexp)/)' $source", $lines);
-	  error_log("perl -n -e 'print ".'$_'." if (".'$_'." =~ /^\"?($regexp)/)' $source");
+	  // We have tested perl instead of egrep as described in queried_data_source.php.
+	  // It seems that egrep is much faster on Linux than MacOS X, and as a result,
+	  // egrep becomes much faster than the perl solution. We can also use the '-P'
+	  // option to do pcre grep if we want to (but it's not currently necessary).
+	  // exec("perl -n -e 'print ".'$_'." if (".'$_'." =~ /^\"?($regexp)/)' $source", $lines);
+	  // error_log("perl -n -e 'print ".'$_'." if (".'$_'." =~ /^\"?($regexp)/)' $source");
+	  exec("egrep '^\"?$regexp' $source", $lines);
+
 	  foreach ($lines as $line) {
       $line = mb_convert_encoding($line, 'UTF-8', $encoding);      
 			$row = str_getcsv($line);

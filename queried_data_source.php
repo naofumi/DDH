@@ -75,18 +75,26 @@ class QueriedDataSource extends QueriedDataSourceBase {
     //
     // There might be some problems with encoding and regular expressions, but
     // we'll address them as necessary.
+    //
+    // Update on Update:
+    // As I wrote on data_source.php, egrep seems to be faster than perl on Linux.
+    // I reverted to egrep.
 
     $iconv_path = $GLOBALS["iconv_path"];
     if (!$iconv_path) {
       die ('$iconv_path is not set in config.php');
     }
-    // error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep \"$regexp\"");
-    // exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep \"$regexp\"", $lines);
-    // $regexp = escapeshellarg($regexp);
-    $perl_command = 'use encoding "utf8"; print $_ if ($_ =~ /'.$regexp.'/)';
-    $escaped_perl_command = escapeshellarg($perl_command);
-    error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | perl -n -e $escaped_perl_command");
-    exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | perl -n -e $escaped_perl_command", $lines);
+    
+    // $perl_command = 'use encoding "utf8"; print $_ if ($_ =~ /'.$regexp.'/)';
+    // $escaped_perl_command = escapeshellarg($perl_command);
+    // error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | perl -n -e $escaped_perl_command");
+    // exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | perl -n -e $escaped_perl_command", $lines);
+
+    $escaped_regexp = escapeshellarg($regexp);
+    error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep $escaped_regexp");
+    exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep $escaped_regexp", $lines);
+
+
 
     foreach ($lines as $line) {
       $row = str_getcsv($line);
