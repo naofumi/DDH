@@ -42,6 +42,14 @@ function select_tag($name, $options = array(), $attributes = array()) {
   echo "</select>";
 }
 
+function select_tag_with_facet($name, $facets = array(), $attributes = array()) {
+  $options = array();
+  foreach ($facets as $value => $count) {
+    $options[$value] = "$value ($count)";
+  }
+  select_tag($name, $options, $attributes);
+}
+
 function attributes_string_from_hash($attributes) {
   $attribute_string = "";
   foreach($attributes as $name => $value) {
