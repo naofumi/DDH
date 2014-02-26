@@ -288,10 +288,15 @@ class DataSource {
 	  // 2. We only need a small number of lines so converting them all is a waste.
 	  //
 	  // For more discussion on using egrep with encoding, take a look at queried_data_source.php
-	  exec("egrep '^\"?$regexp' $source", $lines);
+	  // exec("egrep '^\"?$regexp' $source", $lines);
+	  //
+	  // Update:
+	  // We now use perl instead of egrep as described in queried_data_source.php
+	  exec("perl -n -e 'print ".'$_'." if (".'$_'." =~ /^\"?($regexp)/)' $source", $lines);
+	  error_log("perl -n -e 'print ".'$_'." if (".'$_'." =~ /^\"?($regexp)/)' $source");
 	  foreach ($lines as $line) {
+      $line = mb_convert_encoding($line, 'UTF-8', $encoding);      
 			$row = str_getcsv($line);
-			$row = $this->row_convert_encoding($row, $encoding);
 			$result[$row[0]] = $row;
 	  }
 	  return $result;

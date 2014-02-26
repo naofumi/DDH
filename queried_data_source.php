@@ -58,13 +58,35 @@ class QueriedDataSource extends QueriedDataSourceBase {
     // add code to escape quotes.
     // exec("LANG=".$encoding." egrep \"(?:$regexp)\" $source", $lines);
     // error_log("LANG=".$encoding." egrep \"(?:$regexp)\" $source");
+    //
+    // Update:
+    //
+    // I found that perl is actually much, much faster than egrep.
+    // Instead of 'egrep \"$regexp\"', the following is much faster;
+    // perl -n -e 'print $_ if ($_ =~ /$regexp/)'
+    //
+    // It's at least twice as fast.
+    //
+    // We've also tried to do the decoding within perl like
+    // perl -e 'use Encode; use utf8; while(<>){my $s = Encode::decode("sjis", $_);print Encode::encode("utf-8", $s) if ($s =~ /Jackson.*Bovine（ウシ）.*Whole IgG/u)}
+    // but this is quite slow. It's twice as fast to do 
+    // 
+    // /opt/local/bin/iconv --from-code SJIS --to-code UTF-8 /Applications/MAMP/htdocs/iwai-chem_15ff4e_ddh/ddh/../data/jackson100.csv | perl -n -e 'use encoding "utf8"; print $_ if ($_ =~ /Jackson.*Bovine（ウシ）.*Whole IgG/)'
+    //
+    // There might be some problems with encoding and regular expressions, but
+    // we'll address them as necessary.
 
     $iconv_path = $GLOBALS["iconv_path"];
     if (!$iconv_path) {
       die ('$iconv_path is not set in config.php');
     }
-    error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep \"$regexp\"");
-    exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep \"$regexp\"", $lines);
+    // error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep \"$regexp\"");
+    // exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep \"$regexp\"", $lines);
+    // $regexp = escapeshellarg($regexp);
+    $perl_command = 'use encoding "utf8"; print $_ if ($_ =~ /'.$regexp.'/)';
+    $escaped_perl_command = escapeshellarg($perl_command);
+    error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | perl -n -e $escaped_perl_command");
+    exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | perl -n -e $escaped_perl_command", $lines);
 
     foreach ($lines as $line) {
       $row = str_getcsv($line);
