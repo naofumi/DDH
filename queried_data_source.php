@@ -22,9 +22,8 @@ class QueriedDataSource extends QueriedDataSourceBase {
     $result = array();
 
     foreach(array_keys($this->query) as $key) {
-      // Convert encoding of query to "UTF-8".
-      $encoded_query = $this->char_encoded_query("UTF-8");
-      $escaped_query[$key] = preg_quote($encoded_query[$key]);
+      $query = $this->query;
+      $escaped_query[$key] = preg_quote($query[$key]);
     }
 
     $regexp = implode(".*", array_values($escaped_query));
@@ -104,7 +103,7 @@ class QueriedDataSource extends QueriedDataSourceBase {
   }
 
   protected function confirm_assoc_list_matches_query($assoc_list){
-    foreach($this->utf8_encoded_query() as $field => $value) {
+    foreach($this->query as $field => $value) {
       if ($assoc_list[$field] != $value) {
         return false;
       }

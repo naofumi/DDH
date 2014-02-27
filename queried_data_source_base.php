@@ -9,22 +9,19 @@
 class QueriedDataSourceBase extends DataSource {
   protected $query;
   protected $query_target;
-  protected $query_encoding;
-  protected $utf8_encoded_query;
 
   // We use the $id property of the superclass, but this
   // is actually the query.
   // $query_target is the identifier for the data source against which this query
   // will be tested.
-  // $query_encoding is the encoding of the query parameters, which is the same
-  // as the encoding of the page on which the link was found (unless the link was preencoded).
-  // Autodetection (default value) seems to work well.
-  function __construct($source_parameters, $query = array(), $query_target, $query_encoding = array('SJIS', 'UTF-8', 'EUC-JP')) {
+  // Note that the $query is assumed to be encoded in UTF-8. To ensure that this is
+  // the case, URL queries must be in UTF-8 and forms must have the accept-charset attribute
+  // set to "UTF-8".
+  function __construct($source_parameters, $query = array(), $query_target) {
     parent::__construct($source_parameters);
     $this->query = $query;
     $this->query_target = $query_target;
     $this->query = $this->clean_query();
-    $this->query_encoding = $query_encoding;
   }
 
   protected function retrieve_data() {
@@ -80,25 +77,6 @@ class QueriedDataSourceBase extends DataSource {
 
   protected function confirm_assoc_list_matches_query($assoc_list){
     die('Must implement confirm_assoc_list_matches_query in subclass');
-  }
-
-  // Returns the utf8 encoded query which may be necessary during query
-  // matching. The actualy query functions can chose to work with
-  // either the raw query string (which may be in any encoding specified in $this->query_encoding),
-  // or the utf8_encoded_query.
-  protected function utf8_encoded_query() {
-    if (!isset($this->utf8_encoded_query)) {
-      $this->utf8_encoded_query = $this->char_encoded_query('UTF-8');
-    }
-    return $this->utf8_encoded_query;
-  }
-
-  protected function char_encoded_query($to) {
-    $result = array();
-    foreach(array_keys($this->query) as $key) {
-      $result[$key] = mb_convert_encoding($this->query[$key], $to, $this->query_encoding);
-    }    
-    return $result;
   }
 
   // Clean the query.
