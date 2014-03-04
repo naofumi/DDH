@@ -90,12 +90,20 @@ Note that if you are developing using a local copy of the vendor's website, you 
 
 **.htaccess file placed at a sub level directory**
 
-Create a folder named `ddh_jp` and place the following `.htaccess` file in it.
+Create a top-level folder named `ddh_jp` and place the following `.htaccess` file in it.
 
     RewriteEngine On
     RewriteRule ^(.+)$ http://ddh.castle104.com/[cryptic_key]_iwai_ddh/$1 [P,L]
 
 These `.htaccess` files will intercept a request to `/ddh_jp`. Then Apache will send a request to `http://ddh.castle104.com/[cryptic_key]_iwai_ddh/` and after recieving a response, it will forward that response to the client.
+
+**Important note**
+
+`/ddh_jp/` is always top level. If we cannot get permission to create the `/ddh_jp/` folder containing the `.htaccess` file in this location, then, as a last resort, we can specify a `rewrite_base` location. Refer to the comments in `ddh.js`.
+
+Whenever we intend to call the DDH server, we will always access `/ddh_jp/` from the top level. With Apache URL rewriting, we could match something like `/some/path/ddh_jp/` so we could make the system more flexible. This will not work however with IIS. With IIS, we need to create a file in `/ddh_jp/Default.aspx` which will handle the reverse proxy and we can't match it with a regular expression. 
+
+This means that in development, we will have to prepare a `/ddh_jp/` folder that is separate from the project folder.
 
 ### Changing the webpages
 
