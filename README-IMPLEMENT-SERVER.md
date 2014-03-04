@@ -10,6 +10,47 @@ Secondly, we describe some modifications that need to be made to the vendor's we
 
 ## Setup the implementation server
 
+### Overview
+
+The folder structure of the implementation server will look like the following;
+```
+root
+|- gls_uh5y3x_ddh # Implementation folder for GLS
+|- iwai-chem_15ff4e_ddh # Implementation folder for Iwai
+```
+
+Similarly, the folder structure of the supplier's server will typically look like the following;
+```
+root
+|- ddh_jp # This file hold the .htaccess file 
+          # which reverse proxies the implementation server
+|- index.html # The top page of the supplier's website
+|- folder 1
+|- folder 2
+|- images
+|- javascripts
+|- stylesheets
+```
+
+During development, these structures will be mixed in a single directory like the following;
+```
+root
+|- ddh_jp # This file hold the .htaccess file 
+          # which reverse proxies the implementation server
+|- gls_uh5y3x_ddh # Implementation folder for GLS
+|- iwai-chem_15ff4e_ddh # Implementation folder for Iwai
+|- gls # Mock website for GLS (downloaded with wget)
+|- iwai # Mock website for GLS (downloaded with wget)
+```
+
+Note that the `.htaccess` file in `ddh_jp` has to be modified to point to the implementation folder that we are currently working on.
+
+Also, the mock websites are not at the root level but one level down.
+
+### Restricting access
+
+
+
 ### Naming convention
 
 All the implementations for castle104.com will run on a server with the domain name "ddh.castle104.com". 
@@ -52,16 +93,28 @@ You can access all the data that has been extracted from the CSV files and proce
 
 Below is an example of an `.htaccess` file.
 
-    # Ensure that magic_quotes are off
-    php_flag magic_quotes_gpc Off
+```
+# Ensure that magic_quotes are off
+php_flag magic_quotes_gpc Off
 
-    # restrict access to the vendor's IP address
-    #Order Deny, Allow
-    #Deny from All
-    #Allow from [vendor's IP address]
-    #Allow from [our IP address]
+# Ensure that the READMEs and the Rakefiles etc.
+# are not visible.
+Order Deny,allow
+Deny from All
+<Files ~ "(\.php|\.js|\.css)$">
+  Allow from all
+</Files>
+
+# restrict access to the vendor's IP address
+#Order Deny, Allow
+#Deny from All
+#Allow from [vendor's IP address]
+#Allow from [our IP address]
+```
 
 We make sure magic_quotes are off. This may not be the default for servers running older versions of PHP.
+
+We restrict access by file type. Only PHP, JS and CSS files should be viewable.
 
 We restrict access from the vendor's IP address once the reverse proxy on the vendor's website has been set up. Once this has been set, the only way to get to this website is through the reverse proxy (or from [our IP address]). This will block any visitors from directly accessing the implementation.
 
