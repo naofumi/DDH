@@ -1,22 +1,22 @@
-# Castle104 DDH によるページの作成
+# Generating new pages with DDH
 
-README.mdにはDDHを使って既存のウェブページに情報を埋め込む方法を紹介している。それとは別にDDHを使って新たにウェブページを作ることも可能である。
+DDH allows us to create nice HTML tables directly from CSV files. One way to present this HTML table is to simply generate an HTML page.
 
-DDHというのは2つの側面を持っている。1つは任意のページに表を埋め込むことができる点。もう一つはCSVファイルでデータを管理できる点である。このウェブページを作る方法は、CSVファイルでデータを管理できる点に重きを置いた使い方である。
+There is one large issue however; HTML pages generated on the DDH server will have a URL with `castle104.com`. This is unacceptable. We need to display HTML pages generated on the DDH server under a URL that belongs to the supplier.
 
-ウェブページを作る方法は埋め込みよりも簡単で、単にPHPからHTMLを書き出せば良い。しかし固有の問題もあるので、ここではその対処方法を紹介する。
+This can be accomplished using reverse proxies.
 
-## URLの問題
+## Using Apache RewriteEngine
 
-埋め込みをする場合はURLはエンドユーザからは隠れている（特別に探そうと思わなければ見つからない）。しかしウェブページを作る方法の場合、実際にそのページに飛ぶので、DDHのプログラムファイルが掲載されているウェブサイトのURLが表示される。例えば jsonp.castle104.com というドメインになっていたりする。
+The Apache `RewriteEngine` allows us to use the `.htaccess` file to configure a reverse proxy ([source](http://www.slicksurface.com/blog/2008-11/use-apaches-htaccess-to-accomplish-cool-and-useful-tasks)).
 
-そこでApacheの`RewriteEngine`を使う。この[ブログ](http://www.slicksurface.com/blog/2008-11/use-apaches-htaccess-to-accomplish-cool-and-useful-tasks)に書いてあるように、`RewriteEngine`を使えば`.htaccess`ファイルからでもreverse proxy機能が設定できる。
+For the actual settings, refer to the README.md document on the JSONP implementation repository.
 
-例えば以下のように設定した場合を考える。ここでは以下を`.htaccess`に記述し、http://vendor.com/ のルートディレクトリーに置くとする。
+## Using a forwarding .aspx file
 
-  RewriteEngine On
-  RewriteRule ^jsonp(.+)$ http://3643-jsonp.castle104.com/jsonp$1 [P,L]
+IIS servers do not allow reverse proxies unless we install plugins and change settings through the administrator interface. You cannot simply provide something like `.htaccess`.
 
-そうすると http://vendor.com/jsonp/antibody_search.php などのURLにアクセスrが行われれば、reverse proxyが動いて http://3643-jsonp.castle104.com/jsonp/antibody_search.php にリクエストされるようになる。
+Because it is very unlikely that we will be allowed to do this, we will use a forwarding `.aspx` file. This `.aspx` file sends an HTTP request to the DDH server and embeds the DDH response into its own response. In fact, the DDH response body is all that this forwarding `.aspx` file will return.
 
-このようにすれば http://3643-jsonp.castle104.com というドメインは完全に隠すことが可能になる。
+We are still testing this implementation. See `README-IIS.md` under the `samples` folder for more information.
+

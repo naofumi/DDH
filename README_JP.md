@@ -1,18 +1,4 @@
-# Castle104 DDH
-
-## Outline
-
-DDH (Dokodemo Hyo: どこでも表) allows suppliers to easily take all the product information that they possess in Excel spreadsheets, and put it onto their web sites.
-
-DDH provides multiple ways to put the information onto the web pages.
-
-1. Embedding on the browser via JSONP
-2. Embedding on the server
-3. Generating new pages (we recommend using reverse proxies to make them look as if they are coming from the supplier's domain)
-
-
-
-
+# Castle104 JSONP Service
 
 ## 概要
 
