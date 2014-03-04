@@ -15,7 +15,7 @@
 //
 // `<script src="http://ddh.castle104.com/ddh/javascripts/ddh.js" async></script>`
 !function(){
-  var basePath = "/ddh_jp/", 
+  var basePath = "/ddh_jp/",
       d = document,
       s = "script",
       fjs=d.getElementsByTagName(s)[0], // First <script> tag
@@ -73,13 +73,15 @@
         }
       }
     };
-    var js;
-    if(!d.getElementById(jsidc)){
-      js=d.createElement(s);
-      js.id=jsidc;
-      js.src=basePath+epc+"?reqs="+rs+pv;
-      js.setAttribute('async', 'true');
-      fjs.parentNode.insertBefore(js,fjs);
+    if (rs.length > 0) {
+      var js;
+      if(!d.getElementById(jsidc)){
+        js=d.createElement(s);
+        js.id=jsidc;
+        js.src=basePath+epc+"?reqs="+rs+pv;
+        js.setAttribute('async', 'true');
+        fjs.parentNode.insertBefore(js,fjs);
+      }      
     }
   }();
 }();
