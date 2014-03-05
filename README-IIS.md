@@ -1,4 +1,21 @@
-# Working with IIS
+# Getting DDH to work with IIS
+
+My memos on working with IIS can be found from the `Notes on Working with IIS` section.
+
+Here I present a summary of the current solution.
+
+1. Configure IIS to allow execution of `.aspx` scripts. This means allowing ASP.NET to run. ASP.NET may be either 2.0 or 4.0. We have tested with both. You can do this via "コントロールパネル" > "管理ツール" > "インターネット インフォーメーション サービス", then right-clicking on the web application to select properties, and then on the "virtual directory" settings, set the application execution settings to "script only".
+2. Create a `ddh_jp` folder in the same way you would for an Apache server.
+3. Inside the `ddh_jp` folder, place the `reverse_proxy.aspx` file (from the `samples` folder in the DDH library). This is the file that is responsible for sending DDH request to the DDH server, in a way that is invisible to the browser. Edit `reverse_proxy.aspx` to configure the DDH server implementation folder.
+4. Inside the `ddh_jp` folder, create a `javascripts` subfolder and copy in the `ddh/javascripts/ddh.iis.min.js` file from the DDH library. Rename it to `ddh.min.js` (remove the 'iis.'). This javascript file is different from the Apache version in that the requests are sent via `/ddh_jp/reverse_proxy.aspx`.
+5. Change all URLs for DDH-generated pages (in the files with links to these pages) and DDH server-side embedding (in the files in which embedding will occur). The Apache versions typically looked like `/ddh_jp/[endpoint]?[params]`. The IIS versions should look like `/ddh_jp/reverse_proxy.aspx?ep=[endpoint]&[params]`
+
+In this setup, the URL for the implementation server is set only in `reverse_proxy.aspx` and is totally invisible to the browser.
+
+
+
+---------
+# Notes on Working with IIS
 
 Working with IIS has proven to be a huge challenge for me, very much due to the fact that I don't have much experience with Microsoft web technologies.
 

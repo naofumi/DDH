@@ -49,11 +49,26 @@ Also, the mock websites are not at the root level but one level down.
 
 ### Restricting access
 
+We strongly feel that is important to hide the fact that the supplier is entrusting product information presentation to a third-party. 
 
+We therefore make sure that only traffic from the suppliers server (via reverse proxies) can receive content. For example, a direct request to `http://ddh.castle104.com/ddh_iwai-chem_15ff4e` should never expose product information. 
+
+The `jsonp.php` file checks for the IP address of the client and compares this to `$original_host_ip_address` in the `config.php`.
 
 ### Naming convention
 
 All the implementations for castle104.com will run on a server with the domain name "ddh.castle104.com". 
+
+### robots.txt
+
+The whole of `ddh.castle104.com` should be protected from Googlebots, etc.
+
+At the root level of `ddh.castle104.com`, place the following in `robots.txt`;
+
+```
+User-agent: *
+Disallow: /
+```
 
 ## Setup the implementation folder
 

@@ -11,8 +11,19 @@ DDH provides multiple ways to put the information onto the web pages.
 3. Generating new pages (we recommend using reverse proxies to make them look as if they are coming from the supplier's domain)
 
 
+## Notes
 
+Some quick notes that should be inserted into the proper documentation afterwards.
 
+### Admin pages
+
+Admin pages should be accessed directly and not through reverse proxy setups. Hence they should set;
+
+```
+$suppress_reverse_proxy_requirement = true;
+```
+
+A proper reverse proxy would probably work so we should be able to access admin pages via reverse proxy on an Apache setup. However, this would be a problem on IIS setups. Safer to just allow direct access.1
 
 ## 概要
 
