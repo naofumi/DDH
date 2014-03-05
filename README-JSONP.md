@@ -32,17 +32,42 @@ The downside is that these tables are harder to manage. It is generally easier t
 
 ## How do do JSONP-embedding
 
+### Preparing the core Javascript file
+
+First make sure that the `min.js` files are up to date. `cd` to the `ddh` folder of you implementation and run `bundle exec rake minify_js`.
+
 ### Whole-fragment JSONP-embedding
 
-To do whole-fragment JSONP-embedding, you have to create a separate PHP endpoint for each table format. On the other hand, the Javascript to embed the DDH response is very simple and is always the same. The endpoint PHP filename and the products IDs are specified in the container `<div>`.
+To do whole-fragment JSONP-embedding, you have to create a separate PHP endpoint for each table format in the implementation server. On the other hand, the Javascript to embed the DDH response is very simple and is always the same. 
 
-```Javascript
-<div id="price_table_1" data-ids="201234,201235,201236,201237,201238,201239,201240,201241,201242" data-endpoint="price_table" data-host="" class="ddh-wf"></div>
-<script>!function(d,s,h,id,ep,ids){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https',jsid=id+"-js",pv=/[?&]preview=/.test(location.search)?'&pv=1':'';if(!d.getElementById(jsid)){js=d.createElement(s);js.id=jsid;js.src=p+"://"+h+ep+"?ids="+ids+"&loc="+id+pv;js.setAttribute('async', 'true');fjs.parentNode.insertBefore(js,fjs)}}(document,"script","localhost:8890","price_table_1","/jsonp/price_table.php","201234,201235,201236,201237,201238,201239,201240,201241,201242")</script>
+Embed the following where you want the DDH response to be embedded. The class must contain `ddhwfe` which indicates that this `div` should be processed by DDH. This `div` must have an `id` so that the DDH response will know where it should embed itself. `data-ids` tell DDH which products to show and `data-ep` sets the endpoint php file.
+```HTML
+<div class="price clearfix ddhwfe" id="price_table_1" data-ids="5010-21500,5010-21501,5010-21502,5010-21506,5010-21507,5010-21508,5010-21541" data-ep="price_table.php"></div>
+```
+
+Place this at the end of your last DDH embed. This will call the script that finds all DDH embed containers and will send an information request to the DDH server.
+```HTML
+<script src="/ddh_jp/ddh/javascripts/ddh.min.js"></script>
 ```
 
 
 ### Per-cell JSONP-embedding
 
-Per-cell JSONP-embedding typically uses the exact same PHP endpoint (`ddh/cell.php`) and the same Javascript. The difference is in the markup that we add to each cell.
+Per-cell JSONP-embedding always uses the exact same PHP endpoint (`ddh/cell.php`) and the same Javascript. The difference is in the markup that we add to each cell.
 
+Below is an example row where a DDH response should be embedded. Any element with a `ddhcell` class will be processed. If this element contains a class with a `_x_` in the middle, then a DDH request will be sent to retrieve information. In the case of `5010-21517_x_package`, the `package` field of product id `5010-21517` will be retrieved from the server, and the data will be inserted into this element.
+```HTML
+<tr class="odd">
+    <td class="Pname">Buffer C3 <br />（細胞中和・吸着 Cell Neutralization・Adsorption）</td>
+    <td class="5010-21517_x_package ddhcell"></td>
+    <td>5010-21517</td>
+    <td class="5010-21517_x_price ddhcell"></td>
+    <td>&nbsp;</td>
+</tr>
+```
+
+As with whole-fragment imbedding, insert the same `<script>` tag to call the script that processes DDH embed containers.
+
+```HTML
+<script src="/ddh_jp/ddh/javascripts/ddh.min.js"></script>
+```
