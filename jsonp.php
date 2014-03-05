@@ -6,6 +6,36 @@ require_once(dirname(__FILE__).'/data_source.php');
 require_once(dirname(__FILE__).'/queried_data_source.php');
 require_once(dirname(__FILE__).'/../config.php');
 
+///////////////////////////////////////////////
+// Restrict access to proxies
+//
+// All PHP files which require jsonp.php will
+// not be served unless they come through a reverse
+// proxy that matches $original_host_regex (set in config.php).
+//
+// This ensures that a direct request to the implementation
+// directory will be hidden. This provides
+//
+// If you want direct access (typically in admin pages), then set
+//
+// $suppress_reverse_proxy_requirement = true;
+//
+// After including jsonp.php
+///////////////////////////////////////////////
+
+If (!isset($original_host_ip_address) || !$original_host_ip_address) {
+  die('$original_host_ip_address was not set in config.php');
+}
+if (!(isset($suppress_reverse_proxy_requirement) && $suppress_reverse_proxy_requirement)) {
+  // If the request came directly and not via a registered reverse proxy,
+  // then return a 404 file not found error.
+  if (!preg_match($original_host_ip_address, $_SERVER["REMOTE_ADDR"])) {
+    header("HTTP/1.0 404 Not Found");
+    include(dirname(__FILE__)."/404.html");
+    exit();
+  }  
+}
+
 ////////////////////////////////////////////////
 // Configuration & initialization
 ////////////////////////////////////////////////
