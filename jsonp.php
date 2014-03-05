@@ -24,7 +24,9 @@ require_once(dirname(__FILE__).'/../config.php');
 ///////////////////////////////////////////////
 
 If (!isset($original_host_ip_address) || !$original_host_ip_address) {
-  die('$original_host_ip_address was not set in config.php');
+  header("HTTP/1.0 404 Not Found");
+  error_log('$original_host_ip_address was not set in config.php');
+  exit();
 }
 if (!(isset($suppress_reverse_proxy_requirement) && $suppress_reverse_proxy_requirement)) {
   // If the request came directly and not via a registered reverse proxy,
