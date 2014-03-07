@@ -17,10 +17,9 @@ require_once(dirname(__FILE__).'/../config.php');
 // directory will be hidden. This provides
 //
 // If you want direct access (typically in admin pages), then set
-//
 // $suppress_reverse_proxy_requirement = true;
-//
-// After including jsonp.php
+// After including jsonp.php. We typically only do this inside `basic_auth()`
+// so that only the restricted pages can be accessed directly.
 ///////////////////////////////////////////////
 
 If (!isset($original_host_ip_address) || !$original_host_ip_address) {
@@ -157,14 +156,19 @@ function output_jsonp() {
   if (isset($_GET['preview']))
   	$html = "<div style='border: 1px dotted red'>".$html."</div>";
  
-  # json_encode supported on PHP 5 >= 5.2.0
-  # PECL json >= 1.2.0
-  $json_html = json_encode($html);
-  $insert_location = insert_location();
-  $output = <<<JS
+  if (isset($_GET['html_only'])){
+    $output = $html;
+  } else {
+    # json_encode supported on PHP 5 >= 5.2.0
+    # PECL json >= 1.2.0
+    $json_html = json_encode($html);
+    $insert_location = insert_location();
+    $output = <<<JS
 var insertTo = document.getElementById('$insert_location');
 insertTo.innerHTML = $json_html;
 JS;
+  }
+
 	echo $output;
 	cache_end($output);
 }
@@ -282,6 +286,11 @@ function add_query_to_url($url, $params = array()) {
 
 // http://www.webdesignleaves.com/wp/php/228/
 function basic_auth(){
+  // We suppress reverse_proxy_requirement only for pages behind 
+  // authentication.
+  global $suppress_reverse_proxy_requirement;
+  $suppress_reverse_proxy_requirement = true;
+
 	global $user;
 	global $hashed_password;
 	global $salt;
