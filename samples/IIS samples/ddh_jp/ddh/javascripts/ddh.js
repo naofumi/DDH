@@ -1,6 +1,6 @@
 // Find DDH placeholder elements, send DDH request and insert response into DOM
 //
-// Reverse proxy version
+// IIS/no-reverse proxy version
 // The IIS/no-reverse proxy version is identical except for the basePath setting.
 // If you can use a reverse proxy, then you can use the reverse proxy version even on IIS.
 //
@@ -8,7 +8,7 @@
 // `<script src="/ddh_jp/ddh/javascripts/ddh.js" async></script>`
 //
 !function(){
-  var basePath = "/ddh_jp/",
+  var basePath = "/ddh_jp/reverse_proxy.aspx",
       d = document,
       s = "script",
       fjs=d.getElementsByTagName(s)[0], // First <script> tag
@@ -46,7 +46,7 @@
       if(!d.getElementById(jsid)){
         js=d.createElement(s);
         js.id=jsid;
-        js.src=basePath+ep+"?ids="+ids+"&loc="+id+pv;
+        js.src=basePath+"?ep="+ep+"&ids="+ids+"&loc="+id+pv;
         js.setAttribute('async', 'true');
         fjs.parentNode.insertBefore(js,fjs)
       }
@@ -71,7 +71,7 @@
       if(!d.getElementById(jsidc)){
         js=d.createElement(s);
         js.id=jsidc;
-        js.src=basePath+epc+"?reqs="+rs+pv;
+        js.src=basePath+"?ep="+epc+"&reqs="+rs+pv;
         js.setAttribute('async', 'true');
         fjs.parentNode.insertBefore(js,fjs);
       }      

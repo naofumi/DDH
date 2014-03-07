@@ -4,14 +4,96 @@ My memos on working with IIS can be found from the `Notes on Working with IIS` s
 
 Here I present a summary of the current solution.
 
+## Setting up the IIS server
+
 1. Configure IIS to allow execution of `.aspx` scripts. This means allowing ASP.NET to run. ASP.NET may be either 2.0 or 4.0. We have tested with both. You can do this via "コントロールパネル" > "管理ツール" > "インターネット インフォーメーション サービス", then right-clicking on the web application to select properties, and then on the "virtual directory" settings, set the application execution settings to "script only".
-2. Create a `ddh_jp` folder in the same way you would for an Apache server.
-3. Inside the `ddh_jp` folder, place the `reverse_proxy.aspx` file (from the `samples` folder in the DDH library). This is the file that is responsible for sending DDH request to the DDH server, in a way that is invisible to the browser. Edit `reverse_proxy.aspx` to configure the DDH server implementation folder.
-4. Inside the `ddh_jp` folder, create a `javascripts` subfolder and copy in the `ddh/javascripts/ddh.iis.min.js` file from the DDH library. Rename it to `ddh.min.js` (remove the 'iis.'). This javascript file is different from the Apache version in that the requests are sent via `/ddh_jp/reverse_proxy.aspx`.
-5. Change all URLs for DDH-generated pages (in the files with links to these pages) and DDH server-side embedding (in the files in which embedding will occur). The Apache versions typically looked like `/ddh_jp/[endpoint]?[params]`. The IIS versions should look like `/ddh_jp/reverse_proxy.aspx?ep=[endpoint]&[params]`
+2. Copy the `App_Code` folder from the `IIS Samples` folder in DDH library. Place this in the root-level of the web application folder. This contains the common classes that will be used in all `.aspx` files.
+3. Copy the `ddh_jp` folder from the `IIS Samples` folder in DDH library. This folder includes the `reverse_proxy.aspx` file that redirects responses to the DDH server whilst hiding the DDH server URL. This also contains `ddh.min.js` which is responsible for triggering JSONP embedding.
+4. Edit `reverse_proxy.aspx` to point to the DDH server for this particular client.
+
+## Change the URLs for DDH-generated pages
+
+Change all URLs for DDH-generated pages (in the files with links to these pages) and DDH server-side embedding (in the files in which embedding will occur). The Apache versions typically looked like `/ddh_jp/[endpoint]?[params]`. The IIS versions should look like `/ddh_jp/reverse_proxy.aspx?ep=[endpoint]&[params]`
 
 In this setup, the URL for the implementation server is set only in `reverse_proxy.aspx` and is totally invisible to the browser.
 
+## Creating `.aspx` ASP.NET files
+
+If you want to embed some ASP.NET code into your static `.html` files, do the following.
+
+1. Resave the `.html` file to UTF-8 with BOM. It is possible to use a different encoding, but it requires careful extra configuration and is not recommended.
+2. Change the file extension to `.aspx`
+3. Change the `<meta>` tag charset to something like `<meta charset=utf-8>`.
+4. At the top of the `.aspx` file, add a `Page` directive like `<%@ Page language="VB" codePage=65001 %>`.
+5. Add ASP.NET code.
+
+### DDH-generated pages link example
+
+```VB
+<%@ Page language="VB" codePage=65001 %>
+'...
+<head>
+<meta charset=utf-8>
+'...
+<% Dim d As New Ddh(Page, Server) %>
+<%= d.link("Bovine（ウシ）", "antibody_reactivity_type.php", _
+                             New String(,) {{"type", "Whole IgG"}, _
+                                            {"reactivity", "Bovine（ウシ）"}, _
+                                            {"title", "Bovine Whole IgG secondary-antibodies"}}) %>
+```
+
+### Server-side embedding example
+
+```VB
+<%@ Page language="VB" codePage=65001 %>
+'...
+<head>
+<meta charset=utf-8>
+'...
+<% Dim d As New Ddh(Page, Server) %>
+<%= d.ServerSideEmbed("price_table.php",
+                      New String(,) {{"ids", "5010-21840,5010-21841,5010-21842"}}) %>
+```
+
+In both examples, we first create an instance of the `Ddh` class. The `Ddh` class is where we store the DDH-related helpers. This uses the `Page` and `Server` instances so we provide them as arguments.
+
+Another thing to note is that Visual Basic does not have array literals. We create arrays using a special syntax that makes it easier to create arrays. 
+
+### Using `.aspx` pages that output SJIS
+
+It is possible to create `.aspx` pages that output SJIS. This is useful in cases where the rest of the website is in SJIS, and the webmaster insists that all pages have the same encoding.
+
+1. Resave the `.html` file to UTF-8 with BOM. Even when ASP.NET should output in SJIS, ASP.NET will first convert all page content to internal Unicode. It is possible to use a different encoding, but it is safer to write the code in UTF-8 from the beginning.
+2. Specify that we will output SJIS in the `Page` directive. This is the same as `responseEncoding` in `web.config` > `globalization` or `Page.ResponseEncoding = "sjis"` with the difference that you can use strings like "sjis" instead of "932".
+
+```VB
+<%@ Page language="VB" codePage=932 %>
+'...
+<head>
+<meta charset=shift-jis>
+'...
+```
+
+Note that you can also set `requestEncoding` in ASP.NET which specifies how ASP.NET will decode parameters sent to it via GET and POST requests. The default is set to UTF-8. In DDH (and in Ruby on Rails as well), we require that all parameters are sent in UTF-8 so the default is perfectly OK.
+
+### Creating `.aspx` files in SJIS
+
+We might want our `.aspx` files to be in SJIS. This might be the case if the website is standardized on SHIFT-JIS with all having `<meta charset=shift-jis>` set. BBEdit by default automatically synchronizes the meta tag to the file encoding; it changes the charset to `<meta charset=utf-8>` when we save a file as UTF-8. If this is the case, we might want to save files in SJIS.
+
+This is however, not the recommended solution.
+
+If this is the case, we have to set this in `web.config`. `web.config` affects all subdirectories. Below is an example.
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <system.web>
+    <globalization fileEncoding="shift-jis"/>
+  </system.web>
+</configuration>
+```
+
+The default for IIS is "shift-jis" (or at least the Windows version of shift-jis), so in most cases, we leave is at it is.
 
 
 ---------

@@ -1,5 +1,10 @@
 task :minify_js do
   require 'uglifier'
-  ugly_js = Uglifier.new.compile(File.read("javascripts/ddh.js"))
-  File.new("javascripts/ddh.min.js", "w").write(ugly_js)
+  javascript_files = ["javascripts/ddh.js",
+                      "samples/IIS samples/ddh_jp/ddh/javascripts/ddh.js"]
+  javascript_files.each do |filepath|
+    ugly_js = Uglifier.new.compile(File.read(filepath))
+    puts "minify #{filepath}"
+    File.new(filepath.sub("ddh.js", "ddh.min.js"), "w").write(ugly_js)
+  end
 end
