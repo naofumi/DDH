@@ -359,7 +359,7 @@ function log_var_dump($variable){
 // support PHP 5.3 use this function as follows;
 //   array_lookup(function_that_returns_array(), 3)
 function array_lookup ($array, $key) {
-  return $array[$key];
+  return isset($array[$key]) ? $array[$key] : null;
 }
 
 // Shim for `str_getcsv` which isn't available
