@@ -23,6 +23,8 @@ Admin pages should be accessed directly and not through reverse proxy setups. He
 $suppress_reverse_proxy_requirement = true;
 ```
 
+This is already done for you if you require basic authentication with `basic_auth()`.
+
 A proper reverse proxy would probably work so we should be able to access admin pages via reverse proxy on an Apache setup. However, this would be a problem on IIS setups. Safer to just allow direct access.
 
 ## 概要
