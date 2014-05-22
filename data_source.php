@@ -302,7 +302,11 @@ class DataSource {
 	  foreach ($lines as $line) {
       $line = mb_convert_encoding($line, 'UTF-8', $encoding);      
 			$row = str_getcsv($line);
-			$result[$row[0]] = $row;
+			// Confirm that we got the right rows because the egrep match
+			// may have false positives.
+			if (in_array($row[0], $ids)) {
+				$result[$row[0]] = $row;
+			}
 	  }
 	  return $result;
 	}
