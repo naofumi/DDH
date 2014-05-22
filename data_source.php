@@ -113,7 +113,7 @@ class DataSource {
 	}
 
 	// Check whether this column should have cells
-	// which span rows. This is set in the source_parameters.
+	// which span rows. This is set in the $source_parameters in config.php.
 	public function rowspanable() {
 		if (isset($this->rowspanable)) {
 			return $this->rowspanable;			

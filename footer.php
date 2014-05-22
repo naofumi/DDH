@@ -1,3 +1,6 @@
+<?php
+// This is the footer fragment for the Admin interface
+?>
   </div>
   <div class="footer">
     <div class="castle104">Designed and created by Castle104, LLC.</div>

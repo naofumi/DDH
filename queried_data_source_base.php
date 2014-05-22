@@ -86,7 +86,8 @@ class QueriedDataSourceBase extends DataSource {
   // 3. Remove blank parameters
   //
   // This is important because of the way we use a Regex to 
-  // go through the CSV file. We run this in the constructer
+  // go through the CSV file (the order of fields matters). 
+  // We run this in the constructer
   // so that $this->query is "clean".
   protected function clean_query() {
     $result = array();
