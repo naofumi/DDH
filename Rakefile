@@ -1,3 +1,4 @@
+desc "Minify ddh.js files for production. Generates ddh.min.js files"
 task :minify_js do
   require 'uglifier'
   javascript_files = ["javascripts/ddh.js",

@@ -113,7 +113,7 @@ class DataSource {
 	}
 
 	// Check whether this column should have cells
-	// which span rows. This is set in the source_parameters.
+	// which span rows. This is set in the $source_parameters in config.php.
 	public function rowspanable() {
 		if (isset($this->rowspanable)) {
 			return $this->rowspanable;			
@@ -302,7 +302,11 @@ class DataSource {
 	  foreach ($lines as $line) {
       $line = mb_convert_encoding($line, 'UTF-8', $encoding);      
 			$row = str_getcsv($line);
-			$result[$row[0]] = $row;
+			// Confirm that we got the right rows because the egrep match
+			// may have false positives.
+			if (in_array($row[0], $ids)) {
+				$result[$row[0]] = $row;
+			}
 	  }
 	  return $result;
 	}

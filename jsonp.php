@@ -140,8 +140,10 @@ function cache_obj(){
 // Functions to return JSON
 /////////////////////////////////////////////////
 function start_jsonp($data_source) {
-	header('Content-Type: application/javascript');
-
+  if (!isset($_GET['html_only'])) {
+    header('Content-Type: application/javascript');  
+  }
+	
 	cache_start($data_source);
 	ob_start();
 }

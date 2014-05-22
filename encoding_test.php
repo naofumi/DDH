@@ -1,6 +1,9 @@
 <?php
-function double_convert($str, $encoding) {
+function double_convert_mb($str, $encoding) {
   return mb_convert_encoding(mb_convert_encoding($str, $encoding, 'utf-8'), 'utf-8', $encoding);
+}
+function double_convert_iconv($str, $encoding) {
+  return iconv($encoding, 'utf-8', iconv('utf-8', $encoding."//IGNORE//TRANSLIT", $str));
 }
 $q = $_REQUEST['q'];
 ?>
@@ -33,27 +36,43 @@ $q = $_REQUEST['q'];
 <table>
   <tr>
     <th>文字コード</th>
-    <th>表示</th>
+    <th style="width: 100px">表示</th>
   </tr>
   <tr>
-    <th>UTF-8:</th>
+    <td>UTF-8:</td>
     <td><?php echo $q ?></td>
   </tr>
   <tr>
-    <th>Shift JIS:</th>
-    <td><?php echo double_convert($q, 'sjis') ?></td>
+    <td>mb Shift JIS:</td>
+    <td><?php echo double_convert_mb($q, 'sjis') ?></td>
   </tr>
   <tr>
-    <th>Shift JIS (Win-31J,CP932, mb 'sjis-win'):</th>
-    <td><?php echo double_convert($q, 'sjis-win') ?></td>
+    <td>mb Shift JIS (Win-31J,CP932, mb 'sjis-win'):</td>
+    <td><?php echo double_convert_mb($q, 'sjis-win') ?></td>
   </tr>
   <tr>
-    <th>EUC JP:</th>
-    <td><?php echo double_convert($q, 'eucjp') ?></td>
+    <td>mb EUC JP:</td>
+    <td><?php echo double_convert_mb($q, 'eucjp') ?></td>
   </tr>
   <tr>
-    <th>EUC JP (mb 'eucjp-win'):</th>
-    <td><?php echo double_convert($q, 'eucjp-win') ?></td>
+    <td>mb EUC JP (mb 'eucjp-win'):</td>
+    <td><?php echo double_convert_mb($q, 'eucjp-win') ?></td>
+  </tr>
+  <tr>
+    <td>iconv Shift JIS:</td>
+    <td><?php echo double_convert_iconv($q, 'sjis') ?></td>
+  </tr>
+  <tr>
+    <td>iconv Shift JIS (CP932):</td>
+    <td><?php echo double_convert_iconv($q, 'CP932') ?></td>
+  </tr>
+  <tr>
+    <td>iconv Shift JIS (SHIFT_JISX0213):</td>
+    <td><?php echo double_convert_iconv($q, 'SHIFT_JISX0213') ?></td>
+  </tr>
+  <tr>
+    <td>iconv EUC JP:</td>
+    <td><?php echo double_convert_iconv($q, 'eucjp') ?></td>
   </tr>
 </table>
 <p>
