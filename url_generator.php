@@ -1,4 +1,5 @@
 <?php
+  $suppress_reverse_proxy_requirement = true;
   require(dirname(__FILE__).'/jsonp.php');
 
   basic_auth();
