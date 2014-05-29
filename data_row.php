@@ -67,4 +67,28 @@ class DataRowBase {
 	  return $result;
 	}
 
+	function th($field, $attributes = array(), $field_for_rowspan = null) {
+		return $this->table_cell('th', $field, $attributes, $field_for_rowspan);
+	}
+
+	function table_cell($tag_name, $field, $attributes = array(), $field_for_rowspan = null) {
+		if (!$field_for_rowspan) {
+			$field_for_rowspan = $field;
+		}
+	  $result = "";
+	  $attribute_string = "";
+	  foreach($attributes as $name => $value) {
+	    $attribute_string = $attribute_string." $name=\"$value\"";
+	  }
+	  if ($this->get($field_for_rowspan."_rowspan") && $this->get($field_for_rowspan."_rowspan") > 1) {
+	    $attribute_string = $attribute_string." rowspan=".$this->get($field_for_rowspan."_rowspan");
+	  }
+	  if (!$this->get($field_for_rowspan."_rowspan") || $this->get($field_for_rowspan."_rowspan") != -1) {
+	    $result = "<$tag_name$attribute_string>";
+	    $result = $result.$this->get($field);
+	    $result = $result."</$tag_name>\n";      
+	  }
+	  return $result;
+	}
+
 }
