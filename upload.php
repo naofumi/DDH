@@ -73,7 +73,7 @@
           <td>
             <?php foreach(scandir($directory) as $file): ?>
               <?php if (substr(basename($file), 0, 1) === ".") {continue;} ?>
-              <div class="file<? if (!in_array(basename($file), all_filenames())) {echo " greyed";} ?>">
+              <div class="file<?php if (!in_array(basename($file), all_filenames())) {echo " greyed";} ?>">
                 <?php echo basename($file); ?> <a href="<?php echo "preview.php?file=".basename($directory)."/$file" ?>" class="preview_button">[内容確認]</a>
                 <div class="date">(更新: <?php echo date("Y-m-d H:i:s", filemtime($directory.$file)) ?>)</div>
               </div>
