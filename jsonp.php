@@ -321,7 +321,7 @@ function log_request() {
 // CSFR token management
 ///////////////////////////////////////////////////////////
 function renew_csrf_token(){
-	$_SESSION["csrf_token"] = md5(uniqid(mt_rand(), true));
+  $_SESSION["csrf_token"] = md5(session_id());
 }
 
 function verify_csrf_token(){
@@ -333,7 +333,7 @@ function verify_csrf_token(){
 }
 
 function raise_csrf_error(){
-	die("csrf_token does not match");
+	die("csrf_token does not match with SESSION:".$_SESSION["csrf_token"]." and REQUEST: ".$_REQUEST["csrf_token"]);
 }
 
 ///////////////////////////////////////////
