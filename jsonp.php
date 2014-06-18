@@ -148,9 +148,26 @@ function start_jsonp($data_source) {
 	ob_start();
 }
 
-function output_jsonp() {
+function output_jsonp($options = array()) {
 	if (isset($_GET['test_jsonp']))
 		return;
+
+  $additional_javascript = "";
+  if ($options["scripts"]) {
+    $scripts_as_js = json_encode($options["scripts"]);
+    $additional_javascript .= <<<SCRIPT_JS
+scripts = $scripts_as_js;
+(function(){
+  var fjs = document.getElementsByTagName('script')[0];
+  for (var i=0; i < scripts.length; i++) { 
+    var js = document.createElement('script');
+    js.src = "/ddh_jp/javascripts/" + scripts[i];
+    js.setAttribute('async', 'true');
+    fjs.parentNode.insertBefore(js, fjs);
+  }
+})();
+SCRIPT_JS;
+  }
 
   $html = ob_get_contents();
   ob_end_clean();
@@ -168,6 +185,7 @@ function output_jsonp() {
     $output = <<<JS
 var insertTo = document.getElementById('$insert_location');
 insertTo.innerHTML = $json_html;
+$additional_javascript;
 JS;
   }
 
