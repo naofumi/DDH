@@ -305,22 +305,24 @@ function add_query_to_url($url, $params = array()) {
 //////////////////////////////////////////////////////////
 
 // http://www.webdesignleaves.com/wp/php/228/
-function basic_auth(){
+function basic_auth($users = false){
+  global $admin_users;
+  if ($users == false)
+    $users = $admin_users;
   // We suppress reverse_proxy_requirement only for pages behind 
   // authentication.
   global $suppress_reverse_proxy_requirement;
   $suppress_reverse_proxy_requirement = true;
 
-	global $user;
-	global $hashed_password;
-	global $salt;
   if (isset($_SERVER['PHP_AUTH_USER']) and isset($_SERVER['PHP_AUTH_PW'])){
-    if (($_SERVER['PHP_AUTH_USER'] == $user) && 
-        (crypt($_SERVER['PHP_AUTH_PW'], $salt) == $hashed_password)){
-      return;
+    $user = $users[$_SERVER['PHP_AUTH_USER']];
+    if ($user) {
+      if (crypt($_SERVER['PHP_AUTH_PW'], $user["salt"]) == $user["hashed_password"]) {
+        return;
+      }
     }
   }
-  header('WWW-Authenticate: Basic realm="DDH Admin Area"');
+  header('WWW-Authenticate: Basic realm="DDH Restricted Area"');
   header('HTTP/1.0 401 Unauthorized');
   header('Content-type: text/html; charset='.mb_internal_encoding());
   die("Authorization Failed.");

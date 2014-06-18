@@ -41,12 +41,19 @@ $source_parameters = array(
 );
 
 ////////////////////////////////////////////////////
-// Administrator account settings
+// Account settings
 ////////////////////////////////////////////////////
-$user = "boo";
-// 16-letters, must start with "$6$" for CRYPT_SHA512
-$salt = "$6$2asd8xi1coasd";
-$hashed_password = crypt("hoo", $salt);
+// "salt" is 16-letters, must start with "$6$" for CRYPT_SHA512
+//
+// Register accounts with login id as the key.
+// You can restrict access by calling `basic_auth($admin_users)`
+// or `basic_auth($dealer_users)` depending on which users
+// you want to grant access to.
+$admin_users = array("boo" => array("salt" => "$6$2asd8xi1coasd", 
+                                    "hashed_password" => crypt("hoo", $salt)));
+
+$dealer_users = array("kung" => array("salt" => "$6$2asd8xi1coasd", 
+                                    "hashed_password" => crypt("fu", $salt)));
 
 ////////////////////////////////////////////////////
 // Set time zone
