@@ -47,7 +47,7 @@ if (ini_get('magic_quotes_gpc')) {
 }
 
 /////////////////////////////////////////////////
-/// Functions to retrieve data from the CSV files
+/// Functions to retrieve data from the CSV files for preview
 /////////////////////////////////////////////////
 
 function get_row_count($source) {
@@ -63,7 +63,7 @@ function get_rows($start = 0, $limit = 100, $source, $encoding) {
   foreach ($lines as $line) {
     $row = str_getcsv($line);
     $row = row_convert_encoding($row, $encoding);
-    $result[$row[0]] = $row;
+    array_push($result, $row);
   }
   return $result;
 }
