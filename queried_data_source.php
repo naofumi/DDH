@@ -89,11 +89,16 @@ class QueriedDataSource extends QueriedDataSourceBase {
     // error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | perl -n -e $escaped_perl_command");
     // exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | perl -n -e $escaped_perl_command", $lines);
 
+    // If you are encountering errors with running programs from the command line,
+    // add "2>&1" to the command to redirect standard error to the output.
+    //
+    // If you are encountering errors on MAMP, then try using
+    // $iconv_path = "export DYLD_LIBRARY_PATH=/usr/lib/:$DYLD_LIBRARY_PATH;/usr/bin/iconv";
+    // in the config file. What happens is MAMP sets DYLD_LIBRARY_PATH without /usr/lib
+    // which can cause issues.
     $escaped_regexp = escapeshellarg($regexp);
     error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep $escaped_regexp");
     exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep $escaped_regexp", $lines);
-
-
 
     foreach ($lines as $line) {
       $row = str_getcsv($line);
