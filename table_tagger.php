@@ -127,7 +127,7 @@ class TableTagger {
     return $this->id_regex = $regex;
   }
 
-  public function set_tag_for_field_in_col($field_name, $col_num) {
+  public function set_tag_for_field_in_col($field_name, $col_num, $remove_content = false) {
     for($row_num = 1; $row_num <= count($this->grid); $row_num++) {
       $row = $this->grid[$row_num];
       $id_cell = $this->cell_by_grid($row_num, $this->id_col());
@@ -137,6 +137,9 @@ class TableTagger {
         $target_cell = $this->cell_by_grid($row_num, $col_num);
         $this->add_class_to_cell($target_cell, $tag_class);
         $this->add_class_to_cell($target_cell, "ddhcell");
+        if ($remove_content) {
+          $target_cell->innertext = "";
+        }
       }
     }
     return $this->dom;

@@ -1,11 +1,13 @@
 <?php
+  error_reporting(E_ERROR | E_PARSE);
+
   $suppress_reverse_proxy_requirement = true;
   require(dirname(__FILE__).'/jsonp.php');
   require(dirname(__FILE__).'/table_tagger.php');
 
   basic_auth();
+  $parameters = $_GET;
   if ($_GET['submit']) {
-    $parameters = $_GET;
     $table_tagger = new TableTagger($parameters['original_html']);
     $table_tagger->set_id_col($parameters['id_col']);
     $table_tagger->set_id_regex($parameters['id_regex']);
@@ -14,14 +16,20 @@
       $field = $_GET['fields'][$i];
       $col_num = $_GET['col_nums'][$i];
       if ($field && $col_num) {
-        $table_tagger->set_tag_for_field_in_col($field, $col_num);
+        $table_tagger->set_tag_for_field_in_col($field, $col_num, true);
       }
     }
 
     // TODO: Pretty print the result using tidy
     //       The PHP library requires that we configure PHP for this.
     //       Instead, we will try simply using the command line `tidy` command.
-    // $tidy_result = 
+    $tidy_result = array();
+    exec("echo ".escapeshellarg($table_tagger->dom)." | tidy -i -wrap 1000 -raw -utf8", $tidy_result);
+    $tidy_result = join("\n", $tidy_result);
+    // $tidy_result = preg_replace('/<body>(.*)<\/body>/m', "$1", $tidy_result);
+    $matches = array();
+    preg_match('/<body>(.*)<\/body>/s', $tidy_result, $matches);
+    $tidy_result = $matches[1];
   }
 
   include('header.php');
@@ -76,8 +84,12 @@
   </form>
   <fieldset>
     <legend>新しいHTML</legend>
-    <label>HTMLをここにペースト</label><br />
-    <textarea name="fuck" style="width: 600px;height: 6em;"><?php echo $table_tagger->dom ?></textarea><br />
+    <label>HTMLをここからコピー</label><br />
+    <textarea name="result_html" style="width: 600px;height: 6em;" readonly><?php echo $tidy_result ?></textarea><br />
+    <h4>プレビュー</h4>
+    <div class="tagged_result">
+      <?php echo $tidy_result ?>
+    <div>
   </fieldset>
 </fieldset>
 

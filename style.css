@@ -127,3 +127,8 @@ table, td, th {
 .url_encoder input[type="text"] {
   width: 500px;
 }
+
+.ddhcell {
+  background-color: pink;
+  border: solid 1px red;
+}
