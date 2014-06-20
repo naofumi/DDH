@@ -92,5 +92,21 @@
     <div>
   </fieldset>
 </fieldset>
+<script>
+(function(){
 
+  var cells = document.getElementsByClassName('ddhcell');
+  for (var i = 0; i < cells.length; i++) {
+    var cell = cells[i];
+    var tag = "";
+    for (var j = 0; j < cell.classList.length; j++) {
+      if (RegExp("_x_").test(cell.classList[j])) {
+        tag = cell.classList[j] + " " + tag;
+      }
+    };
+    cell.innerHTML = "<span style='color:red'>"+ tag + "</span>" + cell.innerHTML;
+  };
+})()
+
+</script>
 <?php include('footer.php') ?>
