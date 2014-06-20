@@ -1,5 +1,5 @@
 <?php
-require_once(dirname(__FILE__).'/../simplehtmldom_1_5/simple_html_dom.php');
+require_once(dirname(__FILE__).'/simplehtmldom_1_5/simple_html_dom.php');
 
 class TableTagger {
   // public $source_parameters;
