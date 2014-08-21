@@ -7,7 +7,7 @@ require_once(dirname(__FILE__).'/queried_data_source_base.php');
 // array('field_name' => 'query_keyword', 'field_name' => 'query_keyword', ...)
 //
 // The filter will be an AND on each key=>value set.
-// `value` must exactly match query.
+// `value` must exactly match query (except for case: this class is case insensitive).
 class QueriedDataSource extends QueriedDataSourceBase {
   // Read the CSV file and collect all
   // rows that match the egrep regex for the $ids.
@@ -97,8 +97,8 @@ class QueriedDataSource extends QueriedDataSourceBase {
     // in the config file. What happens is MAMP sets DYLD_LIBRARY_PATH without /usr/lib
     // which can cause issues.
     $escaped_regexp = escapeshellarg($regexp);
-    error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep $escaped_regexp");
-    exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep $escaped_regexp", $lines);
+    error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep -i $escaped_regexp");
+    exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep -i $escaped_regexp", $lines);
 
     foreach ($lines as $line) {
       $row = str_getcsv($line);
@@ -109,7 +109,7 @@ class QueriedDataSource extends QueriedDataSourceBase {
 
   protected function confirm_assoc_list_matches_query($assoc_list){
     foreach($this->query as $field => $value) {
-      if ($assoc_list[$field] != $value) {
+      if (strtolower($assoc_list[$field]) != strtolower($value)) {
         return false;
       }
     }
