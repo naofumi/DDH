@@ -1,7 +1,8 @@
 <?php
-// The QueriedDataSourceBase class allows us to set a $query targeted towards the CSV file
-// in $query_target. The $query is used to filter the ids after which additional data sources
-// will be joined.
+// The QueriedDataSourceBase class allows us to set a $query targeted towards 
+// a CSV file specified in $query_target. The $query is used to filter the ids 
+// after which additional data sources will be joined using the base DataSource
+// class functionality.
 //
 // This class does not implement the actual filtering based on the $query. Subclass this 
 // and implement `get_csv_rows_for_query`, `confirm_assoc_list_matches_query` and

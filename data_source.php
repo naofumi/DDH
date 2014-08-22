@@ -2,8 +2,19 @@
 require_once(dirname(__FILE__).'/data_row.php');
 
 // The DataSource class is the core class that allows us to
-// extract information from multiple CSV files and to join them.
+// extract information from multiple CSV files and to join them
+// based on their IDs (the leftmost column values).
 //
+// First initialize a DataSource object with the $datasource
+// array and a list of IDs. Then you can query the object based
+// on IDs to retrieve data.
+//
+// $data_source = new DataSource($source_parameters, get_ids());
+// // then
+// $data_source->rows()
+// $data_source->row($id)
+// $data_source->ids()
+// // etc...
 class DataSource {
 	public $source_parameters;
 	public $preview_directory;
