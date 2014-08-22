@@ -8,7 +8,29 @@ require_once(dirname(__FILE__).'/queried_data_source_base.php');
 //
 // The filter will be an AND on each key=>value set.
 // `value` must exactly match query (except for case: this class is case insensitive).
+//
+// To allow more flexible and powerful matching, you can set
+// the $query_expanders global in `config.php`. This will allow
+// you to use partial matches for the egrep phase and
+// regular expressions for the `confirm_assoc_list_matches_query`
+// phase. See the comments on `config.php` for details
 class QueriedDataSource extends QueriedDataSourceBase {
+
+  // Get the expanded query from the `$query_expanders`
+  // global set in `config.php`.
+  protected function get_expanded_query_in_key($key, $query) {
+    $query_expanders = $GLOBALS["query_expanders"];
+    $key = strtolower($key);
+    $query = strtolower($query);
+    if (array_key_exists($key, $query_expanders) && 
+        array_key_exists($query, $query_expanders[$key]) && 
+        $query_expanders[$key][$query][0]) {
+        return $query_expanders[$key][$query];
+    } else {
+        return array($query, $query);
+    }
+  }
+
   // Read the CSV file and collect all
   // rows that match the egrep regex for the $ids.
   //
@@ -23,7 +45,8 @@ class QueriedDataSource extends QueriedDataSourceBase {
 
     foreach(array_keys($this->query) as $key) {
       $query = $this->query;
-      $escaped_query[$key] = preg_quote($query[$key]);
+      $expanded_query = $this->get_expanded_query_in_key($key, $query[$key]);
+      $escaped_query[$key] = preg_quote($expanded_query[0]);
     }
 
     $regexp = implode(".*", array_values($escaped_query));
@@ -109,10 +132,20 @@ class QueriedDataSource extends QueriedDataSourceBase {
 
   protected function confirm_assoc_list_matches_query($assoc_list){
     foreach($this->query as $field => $value) {
-      if (strtolower($assoc_list[$field]) != strtolower($value)) {
-        return false;
-      }
+        $expanded_query = $this->get_expanded_query_in_key($field, $value);
+        if (preg_match("/^\/.*\/$/", $expanded_query[1])) {
+            if (!preg_match($expanded_query[1], strtolower($assoc_list[$field]))) {
+                // If the query is a regular expression
+                // and a field failed to match
+                return false;
+            }
+        } else if (strtolower($assoc_list[$field]) != strtolower($expanded_query[1])) {
+            // If the query is not a regular expression
+            // and a field failed to match
+            return false;
+        }
     }
+    // If all fields matched
     return true;
   }
 
