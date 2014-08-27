@@ -85,6 +85,7 @@ class QueriedDataSourceBase extends DataSource {
   // 1. Reorder the $query hash by the order in the source_parameters.
   // 2. Filter out any parameters not in the source_parameters.
   // 3. Remove blank parameters
+  // 4. Strip whitespace from the beginning and end (including all UTF-8 space).
   //
   // This is important because of the way we use a Regex to 
   // go through the CSV file (the order of fields matters). 
@@ -94,8 +95,11 @@ class QueriedDataSourceBase extends DataSource {
     $result = array();
     $fields = $this->source_parameters[$this->query_target]['fields'];
     foreach ($fields as $field) {
-      if (isset($this->query[$field]) && $this->query[$field] !== "") {
-        $result[$field] = $this->query[$field];
+      if (isset($this->query[$field])) {
+        $trimmed_query = $this->trim($this->query[$field]);
+        if ($trimmed_query !== "") {
+          $result[$field] = $this->query[$field];
+        }
       }
     }
     return $result;    

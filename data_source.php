@@ -264,11 +264,16 @@ class DataSource {
 	// TODO: Writing the $source each time is a pain.
 	//       We should write once only in the config file.
 	//
+
+	// Convert a row (an array of values) into a associated list
+	// with the field names as keys.
+	//
+	// We also trim each value removing spaces from the begining and end.
 	protected function convert_row_to_assoc_list($row, $field_names) {
 		$result = array();
 		for ($i = 0; $i < count($field_names); $i++) {
 			$value = isset($row[$i]) ? $row[$i] : null;
-			$result[$field_names[$i]] = $value;
+			$result[$field_names[$i]] = $this->trim($value);
 		}
 		// return array_combine($field_names, array_slice($row, 0, count($field_names)));
 		return $result;
@@ -347,4 +352,13 @@ class DataSource {
 	protected function augment_data_source($value) {
 		die('override the augment_data_source method in config.php');
 	}
+
+	// Use a custom character mask which takes care of
+  // all UTF-8 whitespace characters.
+  // http://stackoverflow.com/questions/4166896/trim-unicode-whitespace-in-php-5-2
+  // http://php.net/manual/en/regexp.reference.unicode.php
+  protected function trim($string) {
+    return preg_replace('/^[\pZ\pC]+|[\pZ\pC]+$/u','',$string);
+  }
+
 }
