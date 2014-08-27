@@ -87,15 +87,21 @@ class QueriedDataSourceBase extends DataSource {
     $source_attr = $this->source_parameters[$this->query_target];
     $result = array();
 
-    $this->each_csv_row_for_query($path, $source_attr['encoding'], function ($row) use (&$result) {
-      $assoc_list = $this->get_assoc_list_for_single_row($row);
+    $line_count = 1;
+    $this->each_csv_row_for_query($path, $source_attr['encoding'], function ($row) use (&$result, &$line_count) {
+        if ($this->maximum_results && ($line_count > $this->maximum_results)) {
+            return false; // Sends a signal to the caller loop to break
+        }
+        $assoc_list = $this->get_assoc_list_for_single_row($row);
 
-      // We double check because each_csv_row_for_query is not optimized for accuracy
-      if (!$this->confirm_assoc_list_matches_query($assoc_list)) {
+        // We double check because each_csv_row_for_query is not optimized for accuracy
+        if (!$this->confirm_assoc_list_matches_query($assoc_list)) {
         
-      } else {
-        $result[$row[0]] = $assoc_list;
-      }
+        } else {
+          $result[$row[0]] = $assoc_list;
+          $line_count++;
+        }
+        return true;
     });
 
     return $result;
@@ -108,6 +114,12 @@ class QueriedDataSourceBase extends DataSource {
 
   // Read the CSV file and send all rows that match the grep regex.
   // The $row (the result from $str_getcsv()) is sent to the callback.
+  //
+  // The function `each_csv_row_for_query()` should call the callback with
+  // the next $row value and iterate while the return value of the callback is true.
+  // If the return value of the callback is false, then `each_csv_row_for_query()`
+  // should terminate. This allows us to set an upper limit to the number
+  // of results to return.
   //
   // For performance, we only check for the presence of the query values
   // and we don't check for exact matches.

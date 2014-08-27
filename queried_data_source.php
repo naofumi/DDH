@@ -160,15 +160,16 @@ class QueriedDataSource extends QueriedDataSourceBase {
     // line-by-line. This is because if we have a huge number of lines, we can
     // easily overwhelm PHP's memory limit.
     $handle = popen("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 $gnugrep_path -i -P $escaped_regexp", "r");
-    $line_count = 1;
     while (($line = fgets($handle)) !== false) {
-        if ($this->maximum_results && ($line_count > $this->maximum_results)) {
-            break;
-        }
         $row = str_getcsv($line);
 
-        $callback($row);
-        $line_count++;
+        // The implementation of `each_csv_row_for_query()` must 
+        // observe the return value of the callback, and exit from
+        // the loop if it returns false. This allows us to limit
+        // the number of results to return.
+        if ($callback($row) === false) {
+            break;
+        }
     }
     fclose($handle);
   }
