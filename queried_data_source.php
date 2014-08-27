@@ -45,13 +45,13 @@ class QueriedDataSource extends QueriedDataSourceBase {
   }
 
   // Read the CSV file and collect all
-  // rows that match the egrep regex for the $ids.
+  // rows that match the egrep regex. The rows
+  // are sent to the $callback for further processing.
   //
   // For performance, we only check for the presence of the query values
   // and we don't check for exact matches.
-  // We have to do a double check, which is easier after the
-  // assoc_list is generated.
-  protected function get_csv_rows_for_query($source, $encoding){
+  // We normally do a double check in the callback.
+  protected function each_csv_row_for_query($source, $encoding, $callback){
     if (!$this->query)
       return array();
     $result = array();
@@ -155,20 +155,29 @@ class QueriedDataSource extends QueriedDataSourceBase {
     // exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep -i $escaped_regexp", $lines);
 
     error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 $gnugrep_path -i -P $escaped_regexp");
-    exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 $gnugrep_path -i -P $escaped_regexp", $lines);
 
-    foreach ($lines as $line) {
-      $row = str_getcsv($line);
-      $result[$row[0]] = $row;
+    // Instead of pulling in all the lines from the grep result, we process
+    // line-by-line. This is because if we have a huge number of lines, we can
+    // easily overwhelm PHP's memory limit.
+    $handle = popen("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 $gnugrep_path -i -P $escaped_regexp", "r");
+    $line_count = 1;
+    while (($line = fgets($handle)) !== false) {
+        if ($this->maximum_results && ($line_count > $this->maximum_results)) {
+            break;
+        }
+        $row = str_getcsv($line);
+
+        $callback($row);
+        $line_count++;
     }
-    return $result;
+    fclose($handle);
   }
 
   protected function confirm_assoc_list_matches_query($assoc_list){
     $partial_match_regexes = array();
     $partial_match_field_names = array_keys($this->partial_match_fields);
     $regexp = "";
-   
+
    foreach($this->query as $field => $value) {
         if (in_array($field, $partial_match_field_names)) {
             $regexp = $this->partial_match_regex($this->partial_match_fields[$field]);

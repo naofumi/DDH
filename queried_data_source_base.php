@@ -5,12 +5,13 @@
 // class functionality.
 //
 // This class does not implement the actual filtering based on the $query. Subclass this 
-// and implement `get_csv_rows_for_query`, `confirm_assoc_list_matches_query` and
+// and implement `each_csv_row_for_query`, `confirm_assoc_list_matches_query` and
 // if necessary, `sort_callback` to actually use this class.
 class QueriedDataSourceBase extends DataSource {
   protected $query;
   protected $query_target;
   protected $partial_match_fields;
+  protected $maximum_results;
 
 
   // We use the $id property of the superclass, but this
@@ -26,6 +27,7 @@ class QueriedDataSourceBase extends DataSource {
     $this->query_target = $query_target;
     $this->query = $this->clean_query();
     $this->partial_match_fields = array();
+    $this->maximum_results = false;
   }
 
   public function set_partial_match_fields($partial_match_fields) {
@@ -34,11 +36,15 @@ class QueriedDataSourceBase extends DataSource {
     foreach($partial_match_fields as $field_name) {
       if (isset($query[$field_name])) {
         $keywords = preg_split("/[\pZ\pC\pM\pP]/", $query[$field_name]);
-        usort(&$keywords, array($this, "compare_string_length"));
+        usort($keywords, array($this, "compare_string_length"));
         var_dump($keywords);
         $this->partial_match_fields[$field_name] = $keywords;        
       }
     }
+  }
+
+  public function set_maximum_results($maximum_results) {
+    $this->maximum_results = $maximum_results;
   }
 
   private function compare_string_length($a, $b) {
@@ -77,30 +83,37 @@ class QueriedDataSourceBase extends DataSource {
 
   // Get data as an associated list from a single source.
   protected function get_assoc_list_for_query() {
-    $source_attr = $this->source_parameters[$this->query_target];
     $path = $this->path_for_source($this->query_target);
-
-    $csv_rows = $this->get_csv_rows_for_query($path, $source_attr['encoding']);
+    $source_attr = $this->source_parameters[$this->query_target];
     $result = array();
-    foreach ($csv_rows as $row) {
-      $assoc_list = $this->convert_row_to_assoc_list($row, $source_attr['fields']);
-      // We double check because get_csv_rows_for_query is not optimized for accuracy
-      if (!$this->confirm_assoc_list_matches_query($assoc_list))
-        continue;
-      $result[$row[0]] = $assoc_list;
-    }
+
+    $this->each_csv_row_for_query($path, $source_attr['encoding'], function ($row) use (&$result) {
+      $assoc_list = $this->get_assoc_list_for_single_row($row);
+
+      // We double check because each_csv_row_for_query is not optimized for accuracy
+      if (!$this->confirm_assoc_list_matches_query($assoc_list)) {
+        
+      } else {
+        $result[$row[0]] = $assoc_list;
+      }
+    });
+
     return $result;
   }
 
-  // Read the CSV file and collect all
-  // rows that match the egrep regex for the $ids.
+  protected function get_assoc_list_for_single_row($row) {
+    $source_attr = $this->source_parameters[$this->query_target];
+    return $this->convert_row_to_assoc_list($row, $source_attr['fields']);    
+  }
+
+  // Read the CSV file and send all rows that match the grep regex.
+  // The $row (the result from $str_getcsv()) is sent to the callback.
   //
   // For performance, we only check for the presence of the query values
   // and we don't check for exact matches.
-  // We have to do a double check, which is easier after the
-  // assoc_list is generated.
-  protected function get_csv_rows_for_query($source, $encoding){
-    die('Must implement get_rows_for_query in subclass');
+  // Hence, we usually do a $this->confirm_assoc_list_matches_query() in the callback.
+  protected function each_csv_row_for_query($source, $encoding, $callback){
+    die('Must implement each_csv_row_for_query in subclass');
   }
 
   protected function confirm_assoc_list_matches_query($assoc_list){
