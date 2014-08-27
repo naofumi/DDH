@@ -10,6 +10,8 @@
 class QueriedDataSourceBase extends DataSource {
   protected $query;
   protected $query_target;
+  protected $partial_match_fields;
+
 
   // We use the $id property of the superclass, but this
   // is actually the query.
@@ -23,6 +25,29 @@ class QueriedDataSourceBase extends DataSource {
     $this->query = $query;
     $this->query_target = $query_target;
     $this->query = $this->clean_query();
+    $this->partial_match_fields = array();
+  }
+
+  public function set_partial_match_fields($partial_match_fields) {
+    log_var_dump($partial_match_fields);
+    $query = $this->query;
+    foreach($partial_match_fields as $field_name) {
+      if (isset($query[$field_name])) {
+        $keywords = preg_split("/[\pZ\pC\pM\pP]/", $query[$field_name]);
+        usort(&$keywords, array($this, "compare_string_length"));
+        var_dump($keywords);
+        $this->partial_match_fields[$field_name] = $keywords;        
+      }
+    }
+  }
+
+  private function compare_string_length($a, $b) {
+    $a_len = strlen($a);
+    $b_len = strlen($b);
+    if ($a_len == $b_len) {
+      return 0;
+    }
+    return ($a_len < $b_len ? 1 : -1);    
   }
 
   protected function retrieve_data() {
@@ -38,7 +63,9 @@ class QueriedDataSourceBase extends DataSource {
           continue;
         $this->update_from_source_id($source_id);
       }
-      uasort($this->data, array($this, "sort_callback"));
+      if (method_exists($this, "sort_callback")) {
+        uasort($this->data, array($this, "sort_callback"));
+      }
     }
   }
 

@@ -31,6 +31,19 @@ class QueriedDataSource extends QueriedDataSourceBase {
     }
   }
 
+  // Takes an array of tokens and generates
+  // a regular expression string that will
+  // to an AND match.
+  private function partial_match_regex($tokens) {
+    $regexp = "";
+    foreach($tokens as $token) {
+        if (strlen($token) > 0) {
+            $regexp .= "(?=.*".preg_quote($token).")";
+        }
+    }
+    return $regexp;
+  }
+
   // Read the CSV file and collect all
   // rows that match the egrep regex for the $ids.
   //
@@ -43,13 +56,21 @@ class QueriedDataSource extends QueriedDataSourceBase {
       return array();
     $result = array();
 
+    // Prepare the regex for grep matching
+    $partial_match_regexes = array();
+    $partial_match_field_names = array_keys($this->partial_match_fields);
+    $regexp = "";
+
     foreach(array_keys($this->query) as $key) {
-      $query = $this->query;
-      $expanded_query = $this->get_expanded_query_in_key($key, $query[$key]);
-      $escaped_query[$key] = preg_quote($expanded_query[0]);
+        if (in_array($key, $partial_match_field_names)) {
+            $regexp = $this->partial_match_regex($this->partial_match_fields[$key]);
+        } else {
+            $query = $this->query;
+            $expanded_query = $this->get_expanded_query_in_key($key, $query[$key]);
+            $regexp .= ".*".preg_quote($expanded_query[0]);            
+        }
     }
 
-    $regexp = implode(".*", array_values($escaped_query));
     $lines = array();
     // Quickly filter the file with 'egrep'.
     // There are several ways to use this.
@@ -100,11 +121,21 @@ class QueriedDataSource extends QueriedDataSourceBase {
     //
     // Update on Update:
     // As I wrote on data_source.php, egrep seems to be faster than perl on Linux.
-    // I reverted to egrep.
+    // Hence I reverted to egrep.
+    //
+    // Update on Update on Update (2014/08/27)
+    // To enable partial_matching, we use postive lookahead `(?=.*antibody)`. This
+    // requires us to use Perl regexes which the Mac version of egrep does not support.
+    // Therefore, we install GNUgrep from MacPorts and will use that.
 
     $iconv_path = $GLOBALS["iconv_path"];
     if (!$iconv_path) {
       die ('$iconv_path is not set in config.php');
+    }
+
+    $gnugrep_path = $GLOBALS["gnugrep_path"];
+    if (!$gnugrep_path) {
+      die ('$gnugrep_path is not set in config.php');
     }
     
     // $perl_command = 'use encoding "utf8"; print $_ if ($_ =~ /'.$regexp.'/)';
@@ -120,8 +151,11 @@ class QueriedDataSource extends QueriedDataSourceBase {
     // in the config file. What happens is MAMP sets DYLD_LIBRARY_PATH without /usr/lib
     // which can cause issues.
     $escaped_regexp = escapeshellarg($regexp);
-    error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep -i $escaped_regexp");
-    exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep -i $escaped_regexp", $lines);
+    // error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep -i $escaped_regexp");
+    // exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep -i $escaped_regexp", $lines);
+
+    error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 $gnugrep_path -i -P $escaped_regexp");
+    exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 $gnugrep_path -i -P $escaped_regexp", $lines);
 
     foreach ($lines as $line) {
       $row = str_getcsv($line);
@@ -131,19 +165,31 @@ class QueriedDataSource extends QueriedDataSourceBase {
   }
 
   protected function confirm_assoc_list_matches_query($assoc_list){
-    foreach($this->query as $field => $value) {
-        $expanded_query = $this->get_expanded_query_in_key($field, $value);
-        if (preg_match("/^\/.*\/$/", $expanded_query[1])) {
-            if (!preg_match($expanded_query[1], strtolower($assoc_list[$field]))) {
-                // If the query is a regular expression
-                // and a field failed to match
+    $partial_match_regexes = array();
+    $partial_match_field_names = array_keys($this->partial_match_fields);
+    $regexp = "";
+   
+   foreach($this->query as $field => $value) {
+        if (in_array($field, $partial_match_field_names)) {
+            $regexp = $this->partial_match_regex($this->partial_match_fields[$field]);
+            if (!preg_match("/$regexp/i", $assoc_list[$field])) {
                 return false;
             }
-        } else if (strtolower($assoc_list[$field]) != strtolower($expanded_query[1])) {
-            // If the query is not a regular expression
-            // and a field failed to match
-            return false;
+        } else {
+            $expanded_query = $this->get_expanded_query_in_key($field, $value);
+            if (preg_match("/^\/.*\/$/", $expanded_query[1])) {
+                if (!preg_match($expanded_query[1], strtolower($assoc_list[$field]))) {
+                    // If the query is a regular expression
+                    // and a field failed to match
+                    return false;
+                }
+            } else if (strtolower($assoc_list[$field]) != strtolower($expanded_query[1])) {
+                // If the query is not a regular expression
+                // and a field failed to match
+                return false;
+            }            
         }
+
     }
     // If all fields matched
     return true;
