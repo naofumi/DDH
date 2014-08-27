@@ -34,7 +34,7 @@ class QueriedDataSource extends QueriedDataSourceBase {
   // Takes an array of tokens and generates
   // a regular expression string that will
   // to an AND match.
-  private function partial_match_regex($tokens) {
+  protected function partial_match_regex($tokens) {
     $regexp = "";
     foreach($tokens as $token) {
         if (strlen($token) > 0) {

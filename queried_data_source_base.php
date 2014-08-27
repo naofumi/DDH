@@ -128,6 +128,9 @@ class QueriedDataSourceBase extends DataSource {
     die('Must implement each_csv_row_for_query in subclass');
   }
 
+  // This should return true if the current $row (as represented in the $assoc_list)
+  // matches the query specified in $this->query. It should return either true
+  // or false.
   protected function confirm_assoc_list_matches_query($assoc_list){
     die('Must implement confirm_assoc_list_matches_query in subclass');
   }
