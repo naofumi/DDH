@@ -58,6 +58,15 @@ function attributes_string_from_hash($attributes) {
   return $attribute_string;  
 }
 
+function text_field($name, $attributes = array()) {
+  $value = "";
+  if (isset($_GET[$name])) {
+    $value = $_GET[$name];
+  }
+  echo "<input type=\"text\" value=\"$value\" name=\"$name\"".attributes_string_from_hash($attributes).">";
+
+}
+
 // http://stackoverflow.com/questions/173400/php-arrays-a-good-way-to-check-if-an-array-is-associative-or-sequential
 function is_assoc($array) {
   return (bool)count(array_filter(array_keys($array), 'is_string'));
