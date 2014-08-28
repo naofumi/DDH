@@ -14,6 +14,7 @@ class QueriedDataSourceBase extends DataSource {
   protected $partial_match_fields;
   protected $maximum_results;
   protected $combo_fields;
+  protected $over_limit;
 
 
   // We use the $id property of the superclass, but this
@@ -32,6 +33,7 @@ class QueriedDataSourceBase extends DataSource {
     $this->partial_match_fields = array();
     $this->partial_match_field_names = array();
     $this->maximum_results = false;
+    $this->over_limit = false;
   }
 
   public function set_partial_match_fields($partial_match_field_names) {
@@ -73,6 +75,14 @@ class QueriedDataSourceBase extends DataSource {
 
   public function set_maximum_results($maximum_results) {
     $this->maximum_results = $maximum_results;
+  }
+
+  public function maximum_results() {
+    return $this->maximum_results;
+  }
+
+  public function maximum_results_was_reached() {
+    return $this->over_limit;
   }
 
   private function compare_string_length($a, $b) {
@@ -118,6 +128,7 @@ class QueriedDataSourceBase extends DataSource {
     $line_count = 1;
     $this->each_csv_row_for_query($path, $source_attr['encoding'], function ($row) use (&$result, &$line_count) {
         if ($this->maximum_results && ($line_count > $this->maximum_results)) {
+            $this->over_limit = true;
             return false; // Sends a signal to the caller loop to break
         }
         $assoc_list = $this->get_assoc_list_for_single_row($row);
