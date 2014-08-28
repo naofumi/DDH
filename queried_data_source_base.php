@@ -81,6 +81,21 @@ class QueriedDataSourceBase extends DataSource {
     return $this->maximum_results;
   }
 
+  public function facets($fields) {
+    if ($this->maximum_results_was_reached()) {
+      // If $this->maximum_results_was_reached(),
+      // then it's no use showing facets anyway.
+      return array();
+    } else {
+      return parent::facets($fields);
+
+    }
+  }
+
+  public function should_show_facets() {
+    return $this->total_rows() && !$this->maximum_results_was_reached();
+  }
+
   public function maximum_results_was_reached() {
     return $this->over_limit;
   }
