@@ -18,10 +18,10 @@ class QueriedDataSource extends QueriedDataSourceBase {
 
   // Get the expanded query from the `$query_expanders`
   // global set in `config.php`.
-  protected function get_expanded_query_in_key($key, $query) {
+  protected function get_expanded_query_in_key($key) {
     $query_expanders = $GLOBALS["query_expanders"];
     $key = strtolower($key);
-    $query = strtolower($query);
+    $query = strtolower($this->query[$key]);
     if (array_key_exists($key, $query_expanders) && 
         array_key_exists($query, $query_expanders[$key]) && 
         $query_expanders[$key][$query][0]) {
@@ -58,15 +58,17 @@ class QueriedDataSource extends QueriedDataSourceBase {
 
     // Prepare the regex for grep matching
     $partial_match_regexes = array();
-    $partial_match_field_names = array_keys($this->partial_match_fields);
+    $partial_match_fields = $this->partial_match_fields;
+    $partial_match_field_names = array_keys($partial_match_fields);
+    $combo_field_names = array_keys($this->combo_fields);
     $regexp = "";
 
     foreach(array_keys($this->query) as $key) {
-        if (in_array($key, $partial_match_field_names)) {
-            $regexp = $this->partial_match_regex($this->partial_match_fields[$key]);
+        if (in_array($key, $partial_match_field_names) ||
+            in_array($key, $combo_field_names)) {
+            $regexp = $this->partial_match_regex($partial_match_fields[$key]);
         } else {
-            $query = $this->query;
-            $expanded_query = $this->get_expanded_query_in_key($key, $query[$key]);
+            $expanded_query = $this->get_expanded_query_in_key($key);
             $regexp .= ".*".preg_quote($expanded_query[0]);            
         }
     }
@@ -175,34 +177,52 @@ class QueriedDataSource extends QueriedDataSourceBase {
   }
 
   protected function confirm_assoc_list_matches_query($assoc_list){
-    $partial_match_regexes = array();
-    $partial_match_field_names = array_keys($this->partial_match_fields);
-    $regexp = "";
-
    foreach($this->query as $field => $value) {
-        if (in_array($field, $partial_match_field_names)) {
-            $regexp = $this->partial_match_regex($this->partial_match_fields[$field]);
-            if (!preg_match("/$regexp/i", $assoc_list[$field])) {
-                return false;
-            }
-        } else {
-            $expanded_query = $this->get_expanded_query_in_key($field, $value);
-            if (preg_match("/^\/.*\/$/", $expanded_query[1])) {
-                if (!preg_match($expanded_query[1], strtolower($assoc_list[$field]))) {
-                    // If the query is a regular expression
-                    // and a field failed to match
-                    return false;
-                }
-            } else if (strtolower($assoc_list[$field]) != strtolower($expanded_query[1])) {
-                // If the query is not a regular expression
-                // and a field failed to match
-                return false;
-            }            
+        if (!$this->confirm_assoc_list_matches_query_for_field($assoc_list, $field)){
+            return false;
         }
-
     }
     // If all fields matched
     return true;
   }
 
+  protected function confirm_assoc_list_matches_query_for_field($assoc_list, $field) {
+    $partial_match_regexes = array();
+    $partial_match_fields = $this->partial_match_fields;
+    $partial_match_field_names = array_keys($partial_match_fields);
+    $regexp = "";
+
+    if (isset($this->combo_fields[$field])) {
+        // If this is a combo field, we simply join the
+        // sub_fields together to create a single value to 
+        // match against.
+        $field_value = "";
+        foreach($this->combo_fields[$field] as $sub_field) {
+            $field_value .= " ".$assoc_list[$sub_field];
+        }
+    } else {
+        $field_value = $assoc_list[$field];
+    }
+
+    if (in_array($field, $partial_match_field_names)) {
+        $regexp = $this->partial_match_regex($partial_match_fields[$field]);
+        if (!preg_match("/$regexp/i", $field_value)) {
+            return false;
+        }
+    } else {
+        $expanded_query = $this->get_expanded_query_in_key($field);
+        if (preg_match("/^\/.*\/$/", $expanded_query[1])) {
+            if (!preg_match($expanded_query[1], strtolower($field_value))) {
+                // If the query is a regular expression
+                // and a field failed to match
+                return false;
+            }
+        } else if (strtolower($field_value) != strtolower($expanded_query[1])) {
+            // If the query is not a regular expression
+            // and a field failed to match
+            return false;
+        }            
+    }
+    return true;
+  }
 }

@@ -10,8 +10,10 @@
 class QueriedDataSourceBase extends DataSource {
   protected $query;
   protected $query_target;
+  protected $partial_match_field_names;
   protected $partial_match_fields;
   protected $maximum_results;
+  protected $combo_fields;
 
 
   // We use the $id property of the superclass, but this
@@ -23,24 +25,50 @@ class QueriedDataSourceBase extends DataSource {
   // set to "UTF-8".
   function __construct($source_parameters, $query = array(), $query_target) {
     parent::__construct($source_parameters);
-    $this->query = $query;
+    $this->raw_query = $query;
     $this->query_target = $query_target;
-    $this->query = $this->clean_query();
+    $this->combo_fields = array();
+    $this->clean_query();
     $this->partial_match_fields = array();
+    $this->partial_match_field_names = array();
     $this->maximum_results = false;
   }
 
-  public function set_partial_match_fields($partial_match_fields) {
-    log_var_dump($partial_match_fields);
-    $query = $this->query;
-    foreach($partial_match_fields as $field_name) {
+  public function set_partial_match_fields($partial_match_field_names) {
+    $this->partial_match_field_names = $partial_match_field_names;
+    $this->recalculate_partial_match_fields();
+  }
+
+  protected function recalculate_partial_match_fields() {
+    $result = array();
+    $query = $this->clean_query();
+    // Combo fields are always treated as partial match
+    $all_partial_field_names = array_merge($this->partial_match_field_names, 
+                                           array_keys($this->combo_fields));
+
+    foreach($all_partial_field_names as $field_name) {
       if (isset($query[$field_name])) {
         $keywords = preg_split("/[\pZ\pC\pM\pP]/", $query[$field_name]);
         usort($keywords, array($this, "compare_string_length"));
-        var_dump($keywords);
-        $this->partial_match_fields[$field_name] = $keywords;        
+        $result[$field_name] = $keywords;        
       }
     }
+    $this->partial_match_fields = $result;
+    return $result;
+  }
+
+  // Set the combo_fields property after reordering them
+  // according to the definition in `config.php` ($this->source_paramters)
+  public function set_combo_fields($combo_fields) {
+    $fields = $this->source_parameters[$this->query_target]['fields'];
+    foreach($combo_fields as $combo_field_name => $sub_fields) {
+      usort($sub_fields, function($a, $b) use ($fields) {
+        $this->cmp_in_array($a, $b, $fields);
+      });
+    }
+    $this->combo_fields = $combo_fields;
+    $this->clean_query();
+    $this->recalculate_partial_match_fields();
   }
 
   public function set_maximum_results($maximum_results) {
@@ -148,16 +176,18 @@ class QueriedDataSourceBase extends DataSource {
   // so that $this->query is "clean".
   protected function clean_query() {
     $result = array();
+    $combo_fields = array_keys($this->combo_fields);
     $fields = $this->source_parameters[$this->query_target]['fields'];
-    foreach ($fields as $field) {
-      if (isset($this->query[$field])) {
-        $trimmed_query = $this->trim($this->query[$field]);
+    foreach (array_merge($combo_fields, $fields) as $field) {
+      if (isset($this->raw_query[$field])) {
+        $trimmed_query = $this->trim($this->raw_query[$field]);
         if ($trimmed_query !== "") {
-          $result[$field] = $this->query[$field];
+          $result[$field] = $this->raw_query[$field];
         }
       }
     }
-    return $result;    
+    $this->query = $result;
+    return $result;
   }
 
 }
