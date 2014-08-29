@@ -33,9 +33,13 @@ class DataRowBase {
 
 	// Tells us if this product has a currently running campaign
 	public function is_campaign() {
-	  return isset($this->row['starts_at']) && $this->row['ends_at'] && 
-	      strtotime($this->row['starts_at']) <= time() && 
-	      strtotime($this->row['ends_at']) >= time();
+		if (isset($this->row['starts_at']) && $this->row['starts_at'] &&
+		    isset($this->row['ends_at']) && isset($this->row['ends_at'])) {
+		  return strtotime($this->row['starts_at']) <= time() && 
+				      strtotime($this->row['ends_at']) >= time();
+		} else if (isset($this->row['campaign_price']) && $this->row['campaign_price']) {
+			return true;
+		}
 	}
 
 	// This function generates a <td> tag from the $field in $row
