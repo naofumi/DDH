@@ -12,8 +12,15 @@
   require(dirname(__FILE__).'/jsonp.php');
 
   $preview_directory = dirname(__FILE__).'/../data/preview/';
+  if (!file_exists($preview_directory) || !is_writable($preview_directory))
+    die("$preview_directory must be available and writable by Apache.");
   $current_directory = dirname(__FILE__).'/../data/current/';
+  if (!file_exists($current_directory) || !is_writable($current_directory))
+    die("$current_directory must be available and writable by Apache.");
   $previous_directory = dirname(__FILE__).'/../data/previous/';
+  if (!file_exists($previous_directory) || !is_writable($previous_directory))
+    die("$previous_directory must be available and writable by Apache.");
+  
   $directories = array($preview_directory, $current_directory,
                        $previous_directory);
 
