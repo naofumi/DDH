@@ -98,6 +98,8 @@
 </fieldset>
 <fieldset>
   <legend>新しいファイルを"控え"にアップロード</legend>
+  <h3>CSVファイル形式の制限</h3>
+  現時点では改行を含むCSVファイルには対応していません。改行を含むCSVの場合は、その行が検索されないなどの問題が予想されます。
   <h3>注意</h3>
   ファイル名を厳密に守らないと反映されません。<br />
   <?php foreach($source_parameters as $key => $value): ?>
