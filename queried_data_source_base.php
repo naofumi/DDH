@@ -111,26 +111,40 @@ class QueriedDataSourceBase extends DataSource {
 
   protected function retrieve_data() {
     if (!isset($this->data)){
+      $start_time = microtime(TRUE);
       $this->data = array();
 
       // First get the data for the query_target and set $this->ids
       $this->update_by_query();
+      $end_time = microtime(TRUE);
+      error_log("BENCHMARK update_by_query(do the query on query target): ".($end_time - $start_time));
 
       // Join the other data sources
       foreach($this->source_parameters as $source_id => $source_attr) {
+        $data_source_start_time = microtime(TRUE);
         if ($source_id == $this->query_target)
           continue;
         $this->update_from_source_id($source_id);
+        $data_source_end_time = microtime(TRUE);
+        error_log("BENCHTIME join data source $source_id: ".($data_source_end_time - $data_source_start_time));
       }
+      $end_time = microtime(TRUE);
+      error_log("BENCHTIME update_from_source_id(join other data sources): ".($end_time - $start_time));
+
       if (method_exists($this, "sort_callback")) {
         uasort($this->data, array($this, "sort_callback"));
       }
+      $end_time = microtime(TRUE);
+      error_log("BENCHTIME sort_callback ".($end_time - $start_time));
     }
   }
 
   protected function update_by_query() {
+
     $assoc_list = $this->get_assoc_list_for_query();
+
     $this->update_data_from_assoc_list($assoc_list);
+
     $this->ids = array_keys($assoc_list);
   }
 
