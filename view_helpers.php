@@ -14,9 +14,9 @@ function odd_even_reset(){
   $odd_even_cycle = 0;
 }
 
-// Santize and decode a single param value
+// Santize a single param value.
 function sanitize_param($param) {
-  return htmlspecialchars(mb_convert_encoding($param, 'UTF-8', array('SJIS', 'UTF-8', 'EUC-JP')));
+  return htmlspecialchars($param);
 }
 
 function dasherize($string) {
