@@ -240,9 +240,11 @@ class DataSource {
   	} else {
 			$this->retrieve_data();
 	  	$result = array();
+	  	// Initialize $results array
 	  	foreach($fields as $field) {
 	  		$result[$field] = array();
 	  	}
+	  	// Count facets
 	  	foreach ($this->data as $row) {
 	  		foreach($fields as $field) {
 	  			$value = $row->get($field);
@@ -252,9 +254,28 @@ class DataSource {
 	  			$result[$field][$value]++;
 	  		}
 	  	}
+	  	// Sort results
+	  	log_var_dump($result);
+	  	foreach ($fields as $field) {
+	  		if ($this->field_values($field)) {
+	  			$results_for_field = $result[$field];
+	  			uasort($results_for_field, function($a, $b) use ($field) {
+	  				return $this->cmp_in_array($a, $b, $this->field_values($field));
+	  			});
+	  			$results[$field] = $results_for_field;
+	  		}
+	  	}
+
 	  	$this->facets = $result;
 	  	return $result;  		
   	}
+  }
+
+  // If this data source has any fields that have predefined
+  // values. Override this function and define them as a
+  // nested associative array.
+  public function field_values($field){
+  	return null;
   }
 
 	/////////////////////////////////////////////////
