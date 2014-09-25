@@ -294,37 +294,44 @@ class DataSource {
 	  $result = array();
 	  $regexp = implode("|", $ids);
 	  $lines = array();
-	  // Quickly filter the file with 'egrep'.
-	  // Careful optimization of the regex is important!
-	  // Use something like
-	  // time egrep '^\"?(?:899999)' /Applications/MAMP/htdocs/jsonp/data/large_pricelist.csv
-	  // to benchmark.
-	  // We don't do decoding of the $source because
-	  // 1. $ids are usually simple ASCII.
-	  // 2. We only need a small number of lines so converting them all is a waste.
-	  //
-	  // For more discussion on using egrep with encoding, take a look at queried_data_source.php
-	  // exec("egrep '^\"?$regexp' $source", $lines);
-	  //
-	  // Update:
-	  // We have tested perl instead of egrep as described in queried_data_source.php.
-	  // It seems that egrep is much faster on Linux than MacOS X, and as a result,
-	  // egrep becomes much faster than the perl solution. We can also use the '-P'
-	  // option to do pcre grep if we want to (but it's not currently necessary).
-	  // exec("perl -n -e 'print ".'$_'." if (".'$_'." =~ /^\"?($regexp)/)' $source", $lines);
-	  // error_log("perl -n -e 'print ".'$_'." if (".'$_'." =~ /^\"?($regexp)/)' $source");
-	  exec("egrep '^\"?$regexp' $source", $lines);
 
-	  foreach ($lines as $line) {
-      $line = mb_convert_encoding($line, 'UTF-8', $encoding);      
-			$row = str_getcsv($line);
+	  $this->get_lines_with_gnugrep($regexp, $source, $encoding, function($line) use ($result) {
+	  	$row = str_getcsv($line);
+
 			// Confirm that we got the right rows because the egrep match
 			// may have false positives.
 			if (in_array($row[0], $ids)) {
 				$result[$row[0]] = $row;
 			}
-	  }
+	  });
+
 	  return $result;
+	}
+
+	// This uses gnugrep to extract the matching lines from the $source
+	// and sends each line to the $callback.
+	protected function get_lines_with_gnugrep($regexp, $source, $encoding, $callback) {
+    $iconv_path = $GLOBALS["iconv_path"];
+    if (!$iconv_path) {
+      die ('$iconv_path is not set in config.php');
+    }
+
+    $gnugrep_path = $GLOBALS["gnugrep_path"];
+    if (!$gnugrep_path) {
+      die ('$gnugrep_path is not set in config.php');
+    }
+
+    $escaped_regexp = escapeshellarg($regexp);
+    error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 $gnugrep_path -i -P $escaped_regexp");
+
+    // Instead of pulling in all the lines from the grep result, we process
+    // line-by-line. This is because if we have a huge number of lines, we can
+    // easily overwhelm PHP's memory limit.
+    $handle = popen("$iconv_path --from-code $encoding --to-code UTF-8//IGNORE//TRANSLIT $source | LANG_ALL=UTF-8 $gnugrep_path -i -P $escaped_regexp", "r");
+    while (($line = fgets($handle)) !== false) {
+    	$callback($line);
+    }
+    fclose($handle);
 	}
 
 	// Get data as an associated list from a single source

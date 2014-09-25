@@ -52,12 +52,12 @@ class QueriedDataSource extends QueriedDataSourceBase {
   // and we don't check for exact matches.
   // We normally do a double check in the callback.
   protected function each_csv_row_for_query($source, $encoding, $callback){
+
     if (!$this->query)
       return array();
     $result = array();
 
     // Prepare the regex for grep matching
-    $partial_match_regexes = array();
     $partial_match_fields = $this->partial_match_fields;
     $partial_match_field_names = array_keys($partial_match_fields);
     $combo_field_names = array_keys($this->combo_fields);
@@ -73,96 +73,7 @@ class QueriedDataSource extends QueriedDataSourceBase {
         }
     }
 
-    $lines = array();
-    // Quickly filter the file with 'egrep'.
-    // There are several ways to use this.
-    // One option is to use egrep with different encodings by
-    // using something like "LANG=SJIS egrep". The grep in Mavericks (grep (BSD grep) 2.5.1-FreeBSD)
-    // apparently works well with this, but the grep on my CentOS server (grep (GNU grep) 2.5.1)
-    // does not. Looking around the web, it seems that encoding support in grep is rather
-    // spotty. For GNU grep, LANG affects how character groups are treated, but it does not
-    // do character encoding.
-    //
-    // This means that to support GNU grep, we have to convert encoding to UTF-8 prior to
-    // feeding to egrep. UTF-8 works fine with GNU egrep, probably due to the design
-    // of UTF-8 coding.
-    //
-    // We can use NKF or iconv for this. After a quick benckmark,
-    // iconv seems to be an order of magnitude faster than NKF. In fact
-    // piping iconv output to GNU egrep seems to be as fast as FreeBSD egrep.
-    //
-    // There are also other differences between FreeBSD grep and GNU grep.
-    // FreeBSD egrep seems to have more features (available syntaxes) than
-    // GNU egrep. On the other hand, FreeBSD grep does not have pcre.
-    // Therefore, we should keep the regex syntax rather simple.
-    // There is a good listing of available regex syntaxes here (http://www.kt.rim.or.jp/~kbk/regex/regex.html#EGREP).
-    //
-    // Another note.
-    // We are currently using `"` for the quotes in the shell code.
-    // This is because we have "F(ab')2" type stuff. We should
-    // add code to escape quotes.
-    // exec("LANG=".$encoding." egrep \"(?:$regexp)\" $source", $lines);
-    // error_log("LANG=".$encoding." egrep \"(?:$regexp)\" $source");
-    //
-    // Update:
-    //
-    // I found that perl is actually much, much faster than egrep.
-    // Instead of 'egrep \"$regexp\"', the following is much faster;
-    // perl -n -e 'print $_ if ($_ =~ /$regexp/)'
-    //
-    // It's at least twice as fast.
-    //
-    // We've also tried to do the decoding within perl like
-    // perl -e 'use Encode; use utf8; while(<>){my $s = Encode::decode("sjis", $_);print Encode::encode("utf-8", $s) if ($s =~ /Jackson.*Bovine（ウシ）.*Whole IgG/u)}
-    // but this is quite slow. It's twice as fast to do 
-    // 
-    // /opt/local/bin/iconv --from-code SJIS --to-code UTF-8 /Applications/MAMP/htdocs/iwai-chem_15ff4e_ddh/ddh/../data/jackson100.csv | perl -n -e 'use encoding "utf8"; print $_ if ($_ =~ /Jackson.*Bovine（ウシ）.*Whole IgG/)'
-    //
-    // There might be some problems with encoding and regular expressions, but
-    // we'll address them as necessary.
-    //
-    // Update on Update:
-    // As I wrote on data_source.php, egrep seems to be faster than perl on Linux.
-    // Hence I reverted to egrep.
-    //
-    // Update on Update on Update (2014/08/27)
-    // To enable partial_matching, we use postive lookahead `(?=.*antibody)`. This
-    // requires us to use Perl regexes which the Mac version of egrep does not support.
-    // Therefore, we install GNUgrep from MacPorts and will use that.
-
-    $iconv_path = $GLOBALS["iconv_path"];
-    if (!$iconv_path) {
-      die ('$iconv_path is not set in config.php');
-    }
-
-    $gnugrep_path = $GLOBALS["gnugrep_path"];
-    if (!$gnugrep_path) {
-      die ('$gnugrep_path is not set in config.php');
-    }
-    
-    // $perl_command = 'use encoding "utf8"; print $_ if ($_ =~ /'.$regexp.'/)';
-    // $escaped_perl_command = escapeshellarg($perl_command);
-    // error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | perl -n -e $escaped_perl_command");
-    // exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | perl -n -e $escaped_perl_command", $lines);
-
-    // If you are encountering errors with running programs from the command line,
-    // add "2>&1" to the command to redirect standard error to the output.
-    //
-    // If you are encountering errors on MAMP, then try using
-    // $iconv_path = "export DYLD_LIBRARY_PATH=/usr/lib/:$DYLD_LIBRARY_PATH;/usr/bin/iconv";
-    // in the config file. What happens is MAMP sets DYLD_LIBRARY_PATH without /usr/lib
-    // which can cause issues.
-    $escaped_regexp = escapeshellarg($regexp);
-    // error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep -i $escaped_regexp");
-    // exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 egrep -i $escaped_regexp", $lines);
-
-    error_log("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 $gnugrep_path -i -P $escaped_regexp");
-
-    // Instead of pulling in all the lines from the grep result, we process
-    // line-by-line. This is because if we have a huge number of lines, we can
-    // easily overwhelm PHP's memory limit.
-    $handle = popen("$iconv_path --from-code $encoding --to-code UTF-8 $source | LANG_ALL=UTF-8 $gnugrep_path -i -P $escaped_regexp", "r");
-    while (($line = fgets($handle)) !== false) {
+    $this->get_lines_with_gnugrep($regexp, $source, $encoding, function($line) use ($callback){
         $row = str_getcsv($line);
 
         // The implementation of `each_csv_row_for_query()` must 
@@ -172,8 +83,7 @@ class QueriedDataSource extends QueriedDataSourceBase {
         if ($callback($row) === false) {
             break;
         }
-    }
-    fclose($handle);
+    });
   }
 
   protected function confirm_assoc_list_matches_query($assoc_list){
