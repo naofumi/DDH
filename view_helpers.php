@@ -20,8 +20,10 @@ function sanitize_param($param) {
 }
 
 function dasherize($string) {
-  $lower = strtolower($string);
-  return preg_replace("/(\W)/", "_", $lower);
+  $lower = mb_strtolower($string);
+  $dasherized = preg_replace("/(\W+)/u", "_", $lower);
+  // $double_dash_removed = preg_replace("/(_+)/", "`_", $dasherized);
+  return $dasherized;
 }
 
 function select_tag($name, $options = array(), $attributes = array()) {
