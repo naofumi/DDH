@@ -26,7 +26,15 @@ function dasherize($string) {
   return $dasherized;
 }
 
-function select_tag($name, $options = array(), $attributes = array()) {
+// Create a select tag. The menu options are provided in $options.
+// $options can be a regular array or an associated array.
+// If it is a regular array, the values will be used both for the parameters
+// and display. If it is an associated array, then the keys will be
+// used for the parameters and the values will be used for diplay.
+//
+// The $default allows us to specify which option is selected when the 
+// parameter has not been set.
+function select_tag($name, $options = array(), $attributes = array(), $default = null) {
   echo "<select name=\"$name\"".attributes_string_from_hash($attributes).">";
   $is_assoc_options = is_assoc($options);
   echo "<option value=\"\"></option>";
@@ -34,7 +42,10 @@ function select_tag($name, $options = array(), $attributes = array()) {
     if (!$is_assoc_options) {
       $value = $tag;
     }
-    if (isset($_GET[$name]) && $_GET[$name] === $value) {
+    error_log("$default : $value");
+    if (isset($_REQUEST[$name]) && $_REQUEST[$name] === $value) {
+      $selected = " selected";
+    } else if (!isset($_REQUEST[$name]) && $default == $value) {
       $selected = " selected";
     } else {
       $selected = "";
@@ -44,12 +55,12 @@ function select_tag($name, $options = array(), $attributes = array()) {
   echo "</select>";
 }
 
-function select_tag_with_facet($name, $facets = array(), $attributes = array()) {
+function select_tag_with_facet($name, $facets = array(), $attributes = array(), $default = null) {
   $options = array();
   foreach ($facets as $value => $count) {
     $options[$value] = "$value ($count)";
   }
-  select_tag($name, $options, $attributes);
+  select_tag($name, $options, $attributes, $default);
 }
 
 function attributes_string_from_hash($attributes) {
