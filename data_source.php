@@ -331,6 +331,9 @@ class DataSource {
 
 	// This uses gnugrep to extract the matching lines from the $source
 	// and sends each line to the $callback.
+	//
+	// If the return value of the $callback is false (===), then 
+	// break stop processing the lines.
 	protected function get_lines_with_gnugrep($regexp, $source, $encoding, $callback) {
     $iconv_path = $GLOBALS["iconv_path"];
     if (!$iconv_path) {
@@ -350,7 +353,9 @@ class DataSource {
     // easily overwhelm PHP's memory limit.
     $handle = popen("$iconv_path --from-code $encoding --to-code UTF-8//IGNORE//TRANSLIT $source | LANG_ALL=UTF-8 $gnugrep_path -i -P $escaped_regexp", "r");
     while (($line = fgets($handle)) !== false) {
-    	$callback($line);
+    	if ($callback($line) === false) {
+    		break;
+    	};
     }
     fclose($handle);
 	}

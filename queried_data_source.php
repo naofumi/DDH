@@ -80,8 +80,9 @@ class QueriedDataSource extends QueriedDataSourceBase {
         // observe the return value of the callback, and exit from
         // the loop if it returns false. This allows us to limit
         // the number of results to return.
+        // To break out of the loop, we return false.
         if ($callback($row) === false) {
-            break;
+            return false;
         }
     });
   }
