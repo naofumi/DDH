@@ -255,7 +255,6 @@ class DataSource {
 	  		}
 	  	}
 	  	// Sort results
-	  	log_var_dump($result);
 	  	foreach ($fields as $field) {
 	  		if ($this->field_values($field)) {
 	  			$results_for_field = $result[$field];

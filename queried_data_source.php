@@ -31,6 +31,33 @@ class QueriedDataSource extends QueriedDataSourceBase {
     }
   }
 
+  // The facets function in the parent DataSource does not take expanded_queries
+  // into consideration. Here we add facet information for the
+  // expanded queries.
+  public function facets($fields) {
+    $facets = parent::facets($fields);
+    $query_expanders = $GLOBALS["query_expanders"];
+    foreach ($fields as $field_name) {
+      if (!isset($facets[$field_name])) {continue;};
+
+      if (isset($query_expanders[$field_name])) {
+        foreach ($query_expanders[$field_name] as $param => $extended_query) {
+          $total_count = 0;
+          foreach ($facets[$field_name] as $value => $count) {
+            if (preg_match($extended_query[1], $value)) {
+              $total_count = $total_count + $count;
+            }
+          }
+          $facets[$field_name][$param] = $total_count;
+        }
+      }
+    }
+    log_var_dump($facets);
+    return $facets;
+  }
+  
+
+
   // Takes an array of tokens and generates
   // a regular expression string that will
   // to an AND match.
