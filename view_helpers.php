@@ -43,7 +43,7 @@ function select_tag($name, $options = array(), $attributes = array(), $default =
       $value = $tag;
     }
     error_log("$default : $value");
-    if (isset($_REQUEST[$name]) && $_REQUEST[$name] === $value) {
+    if (isset($_REQUEST[$name]) && strtolower($_REQUEST[$name]) === strtolower($value)) {
       $selected = " selected";
     } else if (!isset($_REQUEST[$name]) && $default == $value) {
       $selected = " selected";

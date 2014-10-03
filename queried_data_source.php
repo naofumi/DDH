@@ -22,13 +22,31 @@ class QueriedDataSource extends QueriedDataSourceBase {
     $query_expanders = $GLOBALS["query_expanders"];
     $key = strtolower($key);
     $query = strtolower($this->query[$key]);
+
+    if (array_key_exists($key, $query_expanders)) {
+
+      error_log("QUERY: $query");
+      log_var_dump(array_map(function($a) {
+                                      return strtolower($a);
+                                    },array_keys($query_expanders[$key])));
+    };
     if (array_key_exists($key, $query_expanders) && 
-        array_key_exists($query, $query_expanders[$key]) && 
-        $query_expanders[$key][$query][0]) {
-        return $query_expanders[$key][$query];
+        ($expanded_query = $this->array_value_for_key_case_insensitive($query_expanders[$key], $query)) &&
+        $expanded_query[0]) {
+        return $expanded_query;
     } else {
         return array($query, $query);
     }
+  }
+
+  private function array_value_for_key_case_insensitive($array, $key) {
+    $lower_key = strtolower($key);
+    foreach ($array as $k => $v) {
+      if (strtolower($k) == $lower_key) {
+        return $v;
+      }
+    }
+    return null;
   }
 
   // The facets function in the parent DataSource does not take expanded_queries
@@ -44,7 +62,7 @@ class QueriedDataSource extends QueriedDataSourceBase {
         foreach ($query_expanders[$field_name] as $param => $extended_query) {
           $total_count = 0;
           foreach ($facets[$field_name] as $value => $count) {
-            if (preg_match($extended_query[1], $value)) {
+            if (preg_match($extended_query[1], strtolower($value))) {
               $total_count = $total_count + $count;
             }
           }
@@ -52,7 +70,7 @@ class QueriedDataSource extends QueriedDataSourceBase {
         }
       }
     }
-    log_var_dump($facets);
+    // log_var_dump($facets);
     return $facets;
   }
   
@@ -150,7 +168,7 @@ class QueriedDataSource extends QueriedDataSourceBase {
     } else {
         $expanded_query = $this->get_expanded_query_in_key($field);
         if (preg_match("/^\/.*\/$/", $expanded_query[1])) {
-            if (!preg_match($expanded_query[1], strtolower($field_value))) {
+            if (!preg_match($expanded_query[1]."i", strtolower($field_value))) {
                 // If the query is a regular expression
                 // and a field failed to match
                 return false;
