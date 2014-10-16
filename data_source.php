@@ -290,10 +290,10 @@ class DataSource {
   			uksort($results_for_field, function($a, $b) use ($field) {
   				return $this->cmp_in_array($a, $b, $this->field_values($field));
   			});
-  			$results[$field] = $results_for_field;
+  			$result[$field] = $results_for_field;
   		}
   	}
-  	$this->facets = $results;
+  	$this->facets = $result;
   	return $this->facets;
   }
 
