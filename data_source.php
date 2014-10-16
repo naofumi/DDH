@@ -20,6 +20,7 @@ class DataSource {
 	public $preview_directory;
 	public $current_directory;
 	public $previous_directory;
+	public $facet_fields;
 	protected $data;
 	protected $ids;
 	protected $rowspanable;
@@ -234,40 +235,66 @@ class DataSource {
   // Since it used $this->data as the data source, the
   // facets are sorted in the same order as they would be 
   // displayed.
-  public function facets($fields) {
+  public function facets() {
   	if (isset($this->facets)) {
   		return $this->facets;
   	} else {
-			$this->retrieve_data();
-	  	$result = array();
-	  	// Initialize $results array
-	  	foreach($fields as $field) {
-	  		$result[$field] = array();
-	  	}
-	  	// Count facets
-	  	foreach ($this->data as $row) {
-	  		foreach($fields as $field) {
-	  			$value = $row->get($field);
-	  			if (!isset($result[$field][$value])) {
-	  				$result[$field][$value] = 0;
-	  			}
-	  			$result[$field][$value]++;
-	  		}
-	  	}
-	  	// Sort results
-	  	foreach ($fields as $field) {
-	  		if ($this->field_values($field)) {
-	  			$results_for_field = $result[$field];
-	  			uasort($results_for_field, function($a, $b) use ($field) {
-	  				return $this->cmp_in_array($a, $b, $this->field_values($field));
-	  			});
-	  			$results[$field] = $results_for_field;
-	  		}
-	  	}
+  		$this->retrieve_facets();
 
-	  	$this->facets = $result;
-	  	return $result;  		
+	  	$this->sort_facets();
+	  	return $this->facets;  		
   	}
+  }
+
+  // Get the raw facet data. Not sorted or cached.
+  public function retrieve_facets() {
+		$this->retrieve_data();
+
+  	$fields = $this->facet_fields;
+  	$result = array();
+  	// Initialize $results array
+  	foreach($fields as $field) {
+  		$result[$field] = array();
+  	}
+  	// Count facets
+  	foreach ($this->data as $row) {
+  		foreach($fields as $field) {
+  			$value = $row->get($field);
+  			if (!isset($result[$field][$value])) {
+  				$result[$field][$value] = 0;
+  			}
+  			$result[$field][$value]++;
+  		}
+  	}
+
+  	$this->facets = $result;
+  	return $this->facets;  	
+  }
+
+  // Set the labels of the fields that will be returned in 
+  // the results from $this->facets().
+  public function set_facet_fields($fields) {
+  	$this->facet_fields = $fields;
+  }
+
+  // Sort facets.
+  // If a field has been set in $this->field_values(),
+  // then that order will be used. Otherwise
+  // we will not resort (hence facets will be returned in order of the results)
+  public function sort_facets() {
+  	$result = $this->facets;
+  	$fields = $this->facet_fields;
+  	foreach ($fields as $field) {
+  		if ($this->field_values($field)) {
+  			$results_for_field = $result[$field];
+  			uksort($results_for_field, function($a, $b) use ($field) {
+  				return $this->cmp_in_array($a, $b, $this->field_values($field));
+  			});
+  			$results[$field] = $results_for_field;
+  		}
+  	}
+  	$this->facets = $results;
+  	return $this->facets;
   }
 
   // If this data source has any fields that have predefined

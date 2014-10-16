@@ -81,13 +81,13 @@ class QueriedDataSourceBase extends DataSource {
     return $this->maximum_results;
   }
 
-  public function facets($fields) {
+  public function facets() {
     if ($this->maximum_results_was_reached()) {
       // If $this->maximum_results_was_reached(),
       // then it's no use showing facets anyway.
       return array();
     } else {
-      return parent::facets($fields);
+      return parent::facets();
 
     }
   }

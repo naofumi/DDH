@@ -23,13 +23,6 @@ class QueriedDataSource extends QueriedDataSourceBase {
     $key = strtolower($key);
     $query = strtolower($this->query[$key]);
 
-    if (array_key_exists($key, $query_expanders)) {
-
-      error_log("QUERY: $query");
-      log_var_dump(array_map(function($a) {
-                                      return strtolower($a);
-                                    },array_keys($query_expanders[$key])));
-    };
     if (array_key_exists($key, $query_expanders) && 
         ($expanded_query = $this->array_value_for_key_case_insensitive($query_expanders[$key], $query)) &&
         $expanded_query[0]) {
@@ -52,8 +45,10 @@ class QueriedDataSource extends QueriedDataSourceBase {
   // The facets function in the parent DataSource does not take expanded_queries
   // into consideration. Here we add facet information for the
   // expanded queries.
-  public function facets($fields) {
-    $facets = parent::facets($fields);
+  public function retrieve_facets() {
+    $facets = parent::retrieve_facets();
+
+    $fields = $this->facet_fields;
     $query_expanders = $GLOBALS["query_expanders"];
     foreach ($fields as $field_name) {
       if (!isset($facets[$field_name])) {continue;};
@@ -70,8 +65,8 @@ class QueriedDataSource extends QueriedDataSourceBase {
         }
       }
     }
-    // log_var_dump($facets);
-    return $facets;
+    $this->facets = $facets;
+    return $this->facets;
   }
   
 
