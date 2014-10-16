@@ -61,7 +61,9 @@ class QueriedDataSource extends QueriedDataSourceBase {
               $total_count = $total_count + $count;
             }
           }
-          $facets[$field_name][$param] = $total_count;
+          if ($total_count > 0) {
+            $facets[$field_name][$param] = $total_count;            
+          }
         }
       }
     }
