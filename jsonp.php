@@ -50,8 +50,13 @@ if (ini_get('magic_quotes_gpc')) {
 /// Functions to retrieve data from the CSV files for preview
 /////////////////////////////////////////////////
 
-function get_row_count($source) {
-  return exec("wc -l < $source");
+function get_row_count($source, $encoding) {
+  $iconv_path = $GLOBALS["iconv_path"];
+  if (!$iconv_path) {
+    die ('$iconv_path is not set in config.php');
+  }
+
+  return exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | wc -l");
 }
 
 function get_rows($start = 0, $limit = 100, $source, $encoding, $delimiter) {

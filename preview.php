@@ -24,7 +24,7 @@
     }
   }
 
-  $row_count = get_row_count($file);
+  $row_count = get_row_count($file, $encoding);
   if (isset($_GET['page'])) {
     $page = intval($_GET['page']);
   } else {
