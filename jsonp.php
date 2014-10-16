@@ -54,15 +54,19 @@ function get_row_count($source) {
   return exec("wc -l < $source");
 }
 
-function get_rows($start = 0, $limit = 100, $source, $encoding) {
+function get_rows($start = 0, $limit = 100, $source, $encoding, $delimiter) {
+  $iconv_path = $GLOBALS["iconv_path"];
+  if (!$iconv_path) {
+    die ('$iconv_path is not set in config.php');
+  }
+
   $start = $start + 1; // sed counts the first line as 1
   $end = $start + $limit - 1;
   $result = array();
   $lines = array();
-  exec("sed -n '$start,${end} p' $source", $lines);
+  exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | sed -n '$start,${end} p'", $lines);
   foreach ($lines as $line) {
-    $row = str_getcsv($line);
-    $row = row_convert_encoding($row, $encoding);
+    $row = str_getcsv($line, $delimiter);
     array_push($result, $row);
   }
   return $result;
@@ -388,12 +392,12 @@ function array_lookup ($array, $key) {
 // for PHP 5.2 and lower.
 // http://stackoverflow.com/questions/13430120/str-getcsv-alternative-for-older-php-version-gives-me-an-empty-array-at-the-e
 if (!function_exists('str_getcsv')) {
-  function str_getcsv ($string) {
+  function str_getcsv ($string, $delimiter = ",") {
     $fh = fopen('php://temp', 'r+');
     fwrite($fh, $string);
     rewind($fh);
 
-    $row = fgetcsv($fh);
+    $row = fgetcsv($fh, $delimiter);
 
     fclose($fh);
     return $row;

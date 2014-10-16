@@ -240,7 +240,6 @@ class DataSource {
   		return $this->facets;
   	} else {
   		$this->retrieve_facets();
-
 	  	$this->sort_facets();
 	  	return $this->facets;  		
   	}
@@ -335,15 +334,19 @@ class DataSource {
 	// Matching is not strict for performance reasons
 	// but you can reanalyze the results if more
 	// accuracy is needed.
-	protected function get_rows_for_ids($ids, $source, $encoding){
+	protected function get_rows_for_ids($ids, $source_id){
+		$source = $this->path_for_source($source_id);
+		$encoding = $this->source_parameters[$source_id]['encoding'];
+		$delimiter = $this->delimiter($source_id);
+
 		if (!$ids)
 			return array();
 	  $result = array();
 	  $regexp = implode("|", $ids);
 	  $lines = array();
 
-	  $this->get_lines_with_gnugrep($regexp, $source, $encoding, function($line) use ($result) {
-	  	$row = str_getcsv($line);
+	  $this->get_lines_with_gnugrep($regexp, $source, $encoding, function($line) use ($result, $delimiter) {
+	  	$row = str_getcsv($line, $delimiter);
 
 			// Confirm that we got the right rows because the egrep match
 			// may have false positives.
@@ -354,6 +357,15 @@ class DataSource {
 
 	  return $result;
 	}
+
+	public function delimiter($source_id) {
+		if (isset($this->source_parameters[$source_id]['delimiter'])) {
+			return $this->source_parameters[$source_id]['delimiter'];
+		} else {
+			return ",";
+		}
+	}
+
 
 	// This uses gnugrep to extract the matching lines from the $source
 	// and sends each line to the $callback.
@@ -388,9 +400,7 @@ class DataSource {
 
 	// Get data as an associated list from a single source
 	private function get_assoc_list_for_ids($ids, $source_id) {
-		$rows = $this->get_rows_for_ids($ids, 
-		                                $this->path_for_source($source_id), 
-		                                $this->source_parameters[$source_id]['encoding']);
+		$rows = $this->get_rows_for_ids($ids, $source_id);
 		$result = array();
 		foreach ($rows as $row) {
 			$result[$row[0]] = $this->convert_row_to_assoc_list($row, 

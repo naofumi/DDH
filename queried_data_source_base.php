@@ -151,11 +151,13 @@ class QueriedDataSourceBase extends DataSource {
   // Get data as an associated list from a single source.
   protected function get_assoc_list_for_query() {
     $path = $this->path_for_source($this->query_target);
-    $source_attr = $this->source_parameters[$this->query_target];
+    $source_id = $this->query_target;
+    $source_attr = $this->source_parameters[$source_id];
+    $delimiter = $this->delimiter($source_id);
     $result = array();
 
     $line_count = 1;
-    $this->each_csv_row_for_query($path, $source_attr['encoding'], function ($row) use (&$result, &$line_count) {
+    $this->each_csv_row_for_query($path, $source_attr['encoding'], $delimiter, function ($row) use (&$result, &$line_count) {
         if ($this->maximum_results && ($line_count > $this->maximum_results)) {
             $this->over_limit = true;
             return false; // Sends a signal to the caller loop to break
@@ -192,7 +194,7 @@ class QueriedDataSourceBase extends DataSource {
   // For performance, we only check for the presence of the query values
   // and we don't check for exact matches.
   // Hence, we usually do a $this->confirm_assoc_list_matches_query() in the callback.
-  protected function each_csv_row_for_query($source, $encoding, $callback){
+  protected function each_csv_row_for_query($source, $encoding, $delimiter, $callback){
     die('Must implement each_csv_row_for_query in subclass');
   }
 

@@ -25,20 +25,26 @@
       if ($value['filename'] == basename($file)) {
         $fields = $value['fields'];
         $encoding = $value['encoding'];
+        $delimiter = isset($value['delimiter']) ? $value['delimiter'] : ",";
       }
     }    
   }
+    // $handle = popen("$iconv_path --from-code $encoding --to-code UTF-8//IGNORE//TRANSLIT $source | LANG_ALL=UTF-8 $gnugrep_path -i -P $escaped_regexp", "r");
 
+  $iconv_path = $GLOBALS["iconv_path"];
+  if (!$iconv_path) {
+    die ('$iconv_path is not set in config.php');
+  }
   $result = array();
   if (isset($_GET['field'])) {
-    $fh = fopen($file, "r");
+    $fh = popen("$iconv_path --from-code $encoding --to-code UTF-8//IGNORE//TRANSLIT $file", "r");
+    // $fh = fopen($file, "r");
     $position = array_search($_GET['field'], $fields);
     $filter_position = array_search($_GET['filter'], $fields);
     if ($fh) {
       $index = 1;
       while ($line = fgets($fh)) {
-        $line = mb_convert_encoding($line, 'UTF-8', $encoding);      
-        $row = str_getcsv($line);
+        $row = str_getcsv($line, $delimiter);
         if (isset($row[$position])) {
           $value = $row[$position];
         } else {
@@ -97,7 +103,7 @@
         <?php endif; ?>
       </div>
       <div style="text-align:right">
-        <button type="button" onclick="window.location='antibody_search.php'">クリア</button>
+        <button type="button" onclick="window.location='select_options.php'">クリア</button>
         <input type="submit" name="submit" value="検索" />
       </div>
     </form>

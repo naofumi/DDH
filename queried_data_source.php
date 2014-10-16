@@ -93,7 +93,7 @@ class QueriedDataSource extends QueriedDataSourceBase {
   // For performance, we only check for the presence of the query values
   // and we don't check for exact matches.
   // We normally do a double check in the callback.
-  protected function each_csv_row_for_query($source, $encoding, $callback){
+  protected function each_csv_row_for_query($source, $encoding, $delimiter, $callback){
 
     if (!$this->query)
       return array();
@@ -115,8 +115,8 @@ class QueriedDataSource extends QueriedDataSourceBase {
         }
     }
 
-    $this->get_lines_with_gnugrep($regexp, $source, $encoding, function($line) use ($callback){
-        $row = str_getcsv($line);
+    $this->get_lines_with_gnugrep($regexp, $source, $encoding, function($line) use ($callback, $delimiter){
+        $row = str_getcsv($line, $delimiter);
 
         // The implementation of `each_csv_row_for_query()` must 
         // observe the return value of the callback, and exit from

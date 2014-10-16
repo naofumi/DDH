@@ -19,6 +19,8 @@
     if ($value['filename'] == basename($file)) {
       $fields = $value['fields'];
       $encoding = $value['encoding'];
+      $delimiter = isset($value['delimiter']) ? $value['delimiter'] : ",";
+      $source_id = $key;
     }
   }
 
@@ -30,7 +32,7 @@
   }
   $per_page = 100;
   $total_pages = intval($row_count / $per_page) + 1;
-  $rows = get_rows(($page - 1) * $per_page, $per_page, $file, $encoding);
+  $rows = get_rows(($page - 1) * $per_page, $per_page, $file, $encoding, $delimiter);
   $pagination_leader = 5;
   $pagination_middle = 3;
 
