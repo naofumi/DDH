@@ -20,8 +20,8 @@ class QueriedDataSource extends QueriedDataSourceBase {
   // global set in `config.php`.
   protected function get_expanded_query_in_key($key) {
     $query_expanders = $GLOBALS["query_expanders"];
-    $key = strtolower($key);
-    $query = strtolower($this->query[$key]);
+    $key = mb_strtolower($key);
+    $query = mb_strtolower($this->query[$key]);
 
     if (array_key_exists($key, $query_expanders) && 
         ($expanded_query = $this->array_value_for_key_case_insensitive($query_expanders[$key], $query)) &&
@@ -33,9 +33,9 @@ class QueriedDataSource extends QueriedDataSourceBase {
   }
 
   private function array_value_for_key_case_insensitive($array, $key) {
-    $lower_key = strtolower($key);
+    $lower_key = mb_strtolower($key);
     foreach ($array as $k => $v) {
-      if (strtolower($k) == $lower_key) {
+      if (mb_strtolower($k) == $lower_key) {
         return $v;
       }
     }
@@ -57,7 +57,7 @@ class QueriedDataSource extends QueriedDataSourceBase {
         foreach ($query_expanders[$field_name] as $param => $extended_query) {
           $total_count = 0;
           foreach ($facets[$field_name] as $value => $count) {
-            if (preg_match($extended_query[1], strtolower($value))) {
+            if (preg_match($extended_query[1], mb_strtolower($value))) {
               $total_count = $total_count + $count;
             }
           }
@@ -114,7 +114,6 @@ class QueriedDataSource extends QueriedDataSourceBase {
             $regexp .= ".*".preg_quote($expanded_query[0]);            
         }
     }
-
     $this->get_lines_with_gnugrep($regexp, $source, $encoding, function($line) use ($callback, $delimiter){
         $row = str_getcsv($line, $delimiter);
 
@@ -165,12 +164,12 @@ class QueriedDataSource extends QueriedDataSourceBase {
     } else {
         $expanded_query = $this->get_expanded_query_in_key($field);
         if (preg_match("/^\/.*\/$/", $expanded_query[1])) {
-            if (!preg_match($expanded_query[1]."i", strtolower($field_value))) {
+            if (!preg_match($expanded_query[1]."i", mb_strtolower($field_value))) {
                 // If the query is a regular expression
                 // and a field failed to match
                 return false;
             }
-        } else if (strtolower($field_value) != strtolower($expanded_query[1])) {
+        } else if (mb_strtolower($field_value) != mb_strtolower($expanded_query[1])) {
             // If the query is not a regular expression
             // and a field failed to match
             return false;
