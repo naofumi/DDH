@@ -112,16 +112,32 @@
 <fieldset>
   <label>結果</label>
   <table>
-    <?php foreach($result as $key => $value): ?>
-      <tr>
-        <td>
-          <?php echo $key ?>
-        </td>
-        <td>
-          <?php echo $value ?>
-        </td>
-      </tr>
-    <?php endforeach; ?>
+    <tr>
+      <td>
+        <table>
+          <?php foreach($result as $key => $value): ?>
+            <tr>
+              <td>
+                <?php echo $key ?>
+              </td>
+              <td>
+                <?php echo $value ?>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </table>
+      </td>
+      <td>
+        <strong>php array</strong>
+        <pre style="border:solid 1px black;padding:5px;">
+[
+<?php foreach ($result as $key => $value): ?>
+  <?php echo "\"$key\", // count $value</br>" ?>
+<?php endforeach; ?>
+]
+        </pre>
+      </td>
+    </tr>
   </table>
 </fieldset>
 <?php include('footer.php') ?>
