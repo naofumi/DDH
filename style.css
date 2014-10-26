@@ -81,6 +81,19 @@ table, td, th {
   margin-left: 10px;
   font-size: 12px;
 }
+.pagination_controls a{
+  border: solid 1px #666;
+  background-color: #EEE;
+  color: #666;
+  font-style: none;
+  text-decoration: none;
+  padding: 3px;
+}
+.pagination_controls a.selected {
+  border: solid 1px #666;
+  background-color: #BBB;
+  color: white;  
+}
 .greyed {
   color: #BBB !important;
 }
