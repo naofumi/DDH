@@ -30,9 +30,9 @@
     foreach($cells[$id] as $field) {
       if ($data_source->row($id)->get($field)) {
         if (is_preview()) {
-          $result[$id."_x_".$field] = "<span style='font-size:10px;color:red;'>$id - $field</span><span class='ddh_campaign'>".$data_source->row($id)->get($field)."</span>";  
+          $result[$id."_x_".$field] = "<span style='font-size:10px;color:red;'>$id - $field</span><span class='ddh_cell'>".$data_source->row($id)->get($field)."</span>";  
         } else {
-          $result[$id."_x_".$field] = "<span class='ddh_campaign'>".$data_source->row($id)->get($field)."</span>";  
+          $result[$id."_x_".$field] = "<span class='ddh_cell'>".$data_source->row($id)->get($field)."</span>";  
         }
       }
     }

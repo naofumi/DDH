@@ -86,6 +86,8 @@ class QueriedDataSource extends QueriedDataSourceBase {
     return $regexp;
   }
 
+  // TODO: This will be replaced by a MongoDB function
+  //
   // Read the CSV file and collect all
   // rows that match the egrep regex. The rows
   // are sent to the $callback for further processing.

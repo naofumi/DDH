@@ -224,6 +224,9 @@ class DataSource {
   // Functions for getting facet information
   /////////////////////////////////////////////////
 
+  // TODO: Hopefully, we can use MongoDB grouping functions so that retrieving facets
+  // won't be to laborious.
+  //
   // This returns the count of values for each $field in $fields.
   //
   // The returned value is
@@ -325,6 +328,9 @@ class DataSource {
 		return $result;
 	}
 
+  // TODO: This will be replaced by a MongoDB-based function.
+  //       This is pretty simple.
+  //
 	// Read the CSV file and collect all
 	// rows that match the egrep regex for the $ids.
 	//
@@ -366,7 +372,10 @@ class DataSource {
 		}
 	}
 
-
+  // TODO: This will be replaced with a MongoDB based function.
+  //       We might even replace the methods that call this because we don't 
+  //       have to do a two step retrieval.
+  //
 	// This uses gnugrep to extract the matching lines from the $source
 	// and sends each line to the $callback.
 	//
@@ -417,7 +426,7 @@ class DataSource {
 		return $row;
 	}
 
-
+	// Deprecated: not used anywhere
 	protected function augment_data_source($value) {
 		die('override the augment_data_source method in config.php');
 	}

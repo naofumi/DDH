@@ -173,7 +173,6 @@ class QueriedDataSourceBase extends DataSource {
         }
         return true;
     });
-
     return $result;
   }
 

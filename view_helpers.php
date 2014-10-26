@@ -54,6 +54,7 @@ function select_tag($name, $options = array(), $attributes = array(), $default =
   echo "</select>";
 }
 
+// Generates a select tag using the facets as the options.
 function select_tag_with_facet($name, $facets = array(), $attributes = array(), $default = null) {
   $options = array();
   foreach ($facets as $value => $count) {
@@ -62,8 +63,50 @@ function select_tag_with_facet($name, $facets = array(), $attributes = array(), 
   select_tag($name, $options, $attributes, $default);
 }
 
+// Generates a select tag while summing up the counts for
+// `ddhq:` ranged options.
+// $options must have `ddhq:` ranged values.
+// $facets must have numeric keys.
+function select_tag_with_ranged_facet($name, $options = array(), $facets = array(), $attributes = array(), $default = null) {
+  $new_options = array();
+  foreach ($options as $range => $tag) {
+    $ddhq_range = preg_replace("/^ddhq:/", "", $range);
+    $range_count = 0;
+    foreach ($facets as $value => $count) {
+      if (is_in_range($value, $ddhq_range)) {
+        $range_count = $range_count + $count;
+      }
+    }
+    $new_options[$range] = $range_count ? "$tag ($range_count)" : "$tag";
+  }
+  select_tag($name, $new_options, $attributes, $default);
+}
+
+// Range is as ddhq formatted string
+// We don't do equal comparisons because we use floats
+function is_in_range($value, $range) {
+  $tuples = explode(",", $range);
+  foreach ($tuples as $tuple) {
+    $condition = explode(":", $tuple);
+    $operator = $condition[0];
+    $compare_to = $condition[1];
+    if ($operator == "lt") {
+      if ($value < $compare_to)
+        continue;
+    } else if ($operator == "gt") {
+      if ($value > $compare_to)
+        continue;      
+    }
+    return false;
+  }
+  return true;
+}
+
 function attributes_string_from_hash($attributes) {
   $attribute_string = "";
+  if (!$attributes) {
+    return "";
+  }
   foreach($attributes as $name => $value) {
     $attribute_string = $attribute_string." $name=\"$value\"";
   }

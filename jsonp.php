@@ -4,6 +4,7 @@ $bench_start = microtime(true);
 require_once(dirname(__FILE__).'/Cache/Lite.php');
 require_once(dirname(__FILE__).'/data_source.php');
 require_once(dirname(__FILE__).'/queried_data_source.php');
+require_once(dirname(__FILE__).'/mongodb_data_source.php');
 require_once(dirname(__FILE__).'/../config.php');
 
 ///////////////////////////////////////////////
@@ -86,8 +87,39 @@ function row_convert_encoding($row, $encoding) {
 }
 
 
+//////////////////////////////////////////////////
+// Function for preview
+/////////////////////////////////////////////////
+
 function is_preview() {
-	return isset($_GET['pv']);
+  return !!$_SESSION['preview'];
+	// return isset($_GET['pv']);
+}
+
+// For the current version, returns 'current'
+// For the preview version, returns 'preview'
+// Otherwise, returns the version timestamp
+function preview_version(){
+  if (isset($_SESSION['preview'])) {
+    if ($_SESSION['preview'] == 'preview') {
+      return 'preview';
+    } else {
+      return (int)$_SESSION['preview'];
+    }
+  } else {
+    return 'current';
+  }
+}
+
+// Human readable preview_version_name
+function preview_version_name() {
+  if (preview_version() == 'preview') {
+    return "準備中";
+  } else if (preview_version() == 'current') {
+    return "公開中";
+  } else {
+    return date("Y-m-d H:i:s", preview_version());
+  }
 }
 
 /////////////////////////////////////////////////
@@ -112,7 +144,7 @@ function insert_location(){
 function setup_cache(){
 	global $use_cache;
 	global $cache_directory;
-	if ($use_cache) {
+	if ($use_cache && !is_preview()) {
 		if (!file_exists ($cache_directory)) {
 			mkdir($cache_directory, 0755, true);
 		}
@@ -204,7 +236,7 @@ JS;
 
 function cache_start($data_source) {
   global $use_cache;
-  if (!$use_cache) {
+  if (!$use_cache || is_preview()) {
     return;
   }
 	if (isset($_GET['no_cache']))
@@ -223,7 +255,7 @@ function cache_start($data_source) {
 
 function cache_end() {
   global $use_cache;
-  if (!$use_cache) {
+  if (!$use_cache || is_preview()) {
     return;
   }
   global $bench_start;

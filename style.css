@@ -71,6 +71,12 @@ table, td, th {
 .directory_view .file:first-child {
   border-top: 1px dotted #BBB;
 }
+.directory_view .dimmed {
+  color: #BBB !important;
+}
+.directory_view .current_snapshot {
+  background-color: yellow !important;
+}
 .preview_button {
   margin-left: 10px;
   font-size: 12px;
