@@ -11,10 +11,14 @@
   // File was uploaded
   if ($_FILES) {
     $uploaddir = $data_source->staging_directory();
+    if (!file_exists($uploaddir) || !is_writable($uploaddir))
+      die("$uploaddir must be available and writable by Apache.");
+
     $uploadfile = $uploaddir.basename($_FILES['userfile']['name']);
-    if ($_FILES['userfile']['type'].strpos('csv') === false && $_FILES['userfile']['type'].strpos('txt') === false) {
+    $extension = strtolower(pathinfo($uploadfile, PATHINFO_EXTENSION));
+    if (($extension != 'csv') && ($extension != 'txt')) {
       echo '<div class="notice">';
-      echo "ERROR: このファイルは CSV でも TXT(タブ区切りテキスト) でもないようです.";
+      echo "ERROR: このファイル\"$uploadfile\"は CSV でも TXT(タブ区切りテキスト) でもないようです.";
       echo "</div>";
     } else if (move_uploaded_file($_FILES['userfile']['tmp_name'], $uploadfile)) {
       $flash_message = "";
