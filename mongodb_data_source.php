@@ -89,7 +89,8 @@
 // 
 class MongoDBDataSource {
   protected $mongo;
-  public $db; // TODO: accessed from mongodb_preview.php. Want to think about encapsulation
+  // TODO: accessed from mongodb_preview.php and select_options.php. Want to think about encapsulation
+  public $db; 
   protected $snapshots;
   protected $staging_directory;
   protected $source_parameters;
