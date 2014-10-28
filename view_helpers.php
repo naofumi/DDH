@@ -63,6 +63,22 @@ function select_tag_with_facet($name, $facets = array(), $attributes = array(), 
   select_tag($name, $options, $attributes, $default);
 }
 
+// Restrict facets to only those in $options.
+// Useful when we only want to show the facets in $field_values.
+// In this case, we would set $options to the $field_values for the data_source
+function select_tag_with_fixed_option_facets($name, $options = array(), $facets = array(), $attributes = array(), $default = null) {
+  $new_facets = array();
+  foreach($options as $option) {
+    if ($facets[$option])
+      $new_facets[$option] = $facets[$option];
+  }
+  return select_tag_with_facet($name, $new_facets, $attributes, $default);
+}
+
+function does_match_value($value, $matcher) {
+
+}
+
 // Generates a select tag while summing up the counts for
 // `ddhq:` ranged options.
 // $options must have `ddhq:` ranged values.
@@ -77,7 +93,8 @@ function select_tag_with_ranged_facet($name, $options = array(), $facets = array
         $range_count = $range_count + $count;
       }
     }
-    $new_options[$range] = $range_count ? "$tag ($range_count)" : "$tag";
+    if ($range_count)
+      $new_options[$range] = "$tag ($range_count)";
   }
   select_tag($name, $new_options, $attributes, $default);
 }
@@ -125,4 +142,9 @@ function text_field($name, $attributes = array()) {
 // http://stackoverflow.com/questions/173400/php-arrays-a-good-way-to-check-if-an-array-is-associative-or-sequential
 function is_assoc($array) {
   return (bool)count(array_filter(array_keys($array), 'is_string'));
+}
+
+function to_currency($number) {
+  setlocale(LC_MONETARY, 'ja_JP');
+  return money_format("&yen;%!i", $number);
 }
