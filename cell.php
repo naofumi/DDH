@@ -16,8 +16,8 @@
   }
 
   // Retrieve data from CSV files
-  $data_source = new DataSource($source_parameters, array_keys($cells));
-
+  $data_source = new MongoDBDataSource($source_parameters, preview_version());
+  $data_source->set_ids(array_keys($cells));
   cache_start($data_source);
 
 
