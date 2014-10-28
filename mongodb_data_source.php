@@ -428,9 +428,15 @@ class MongoDBDataSource {
     array_map('unlink', glob($this->staging_directory()."/*"));
   }
 
+  // Clean up non-numeric characters from a string and
+  // coerce the result into a float.
+  //
+  // Note that these to_numeric fields should not generally
+  // be used for exact equality comparisions, because they
+  // are floats. Use them to compare values.
   protected function to_numeric($string) {
     $clean_string = preg_replace("/[^0-9^\.]/", "", $string);
-    return 0.0 + $clean_string;
+    return (float)$clean_string;
   }
 
   // This uploads the $source_id that was found in the staging_directory.
