@@ -99,6 +99,7 @@
                     <div style="float:right">
                       <span class="date"><?php echo date("Y-m-d H:i:s", $updated_at) ?> Up</span>
                       <a href="<?php echo "mongodb_preview.php?updated_at=$updated_at&source_id=$source_id" ?>" class="preview_button">[内容確認]</a>
+                      <a href="<?php echo "select_options.php?updated_at=$updated_at&source_id=$source_id" ?>" class="preview_button">[分析]</a>
                     </div>
                   <?php endif; ?>
                   <div><?php echo $source_id ?></div>
@@ -143,6 +144,7 @@
                       <div style="float:right">
                         <span class="date"><?php echo date("Y-m-d H:i:s", $updated_at) ?> Up</span>
                         <a href="<?php echo "mongodb_preview.php?updated_at=$updated_at&source_id=$source_id" ?>" class="preview_button">[内容確認]</a>
+                        <a href="<?php echo "select_options.php?updated_at=$updated_at&source_id=$source_id" ?>" class="preview_button">[分析]</a>
                       </div>
                     <?php endif; ?>
                     <div><?php echo $source_id ?></div>
