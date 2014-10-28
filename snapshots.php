@@ -83,7 +83,7 @@
                 <button type=submit name="preview" value="preview">プレビューする</button>
               <?php endif; ?>
               <?php if($uploaded_source_ids): ?>
-                <button type=submit name="publish" value="preview">公開</button>
+                <button type=submit name="publish" value="preview" onclick="return confirm('本当に準備中のバージョンを公開しますか？');">公開</button>
                 <div style="font-size:smaller">コメント</div>
                 <textarea name="comment" style="width:90%"></textarea>
               <?php endif; ?>
@@ -124,7 +124,7 @@
                   <button type=submit name="preview" value="<?php echo $published_at ?>">プレビューする</button>
                 <?php endif; ?>
                 <?php if (!isset($snapshot['current']) || !$snapshot['current']): ?>
-                  <button type=submit name="publish" value="<?php echo $published_at ?>">これに戻す</button>
+                  <button type=submit name="publish" value="<?php echo $published_at ?>" onclick="return confirm('本当に公開中のバージョンを変更しますか？');">これに戻す</button>
                 <?php endif; ?>
               </form>
               <?php if (isset($snapshot['comment'])): ?>
