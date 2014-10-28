@@ -288,7 +288,7 @@ class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
         foreach ($query_expanders[$field_name] as $param => $extended_query) {
           $total_count = 0;
           foreach ($facets[$field_name] as $value => $count) {
-            if (preg_match($extended_query[1], strtolower($value))) {
+            if (preg_match($extended_query[1]."ui", strtolower($value))) {
               $total_count = $total_count + $count;
             }
           }
