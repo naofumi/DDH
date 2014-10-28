@@ -7,7 +7,7 @@
 <body>
   <div class="top-bar">
     <div class="nav-bar">
-      <a href="upload.php">データファイル管理</a> | 
+      <a href="snapshots.php">データファイル管理</a> | 
       <a href="url_generator.php">URL作成</a> | 
       <a href="auto_generate_tags.php">半自動的タグ作成</a>
     </div>
