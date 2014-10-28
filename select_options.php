@@ -2,20 +2,15 @@
   $suppress_reverse_proxy_requirement = true;
   require(dirname(__FILE__).'/jsonp.php');
 
-  $preview_directory = dirname(__FILE__).'/../data/preview/';
-  if (!file_exists($preview_directory) || !is_writable($preview_directory))
-    die("$preview_directory must be available and writable by Apache.");
-  $current_directory = dirname(__FILE__).'/../data/current/';
-  if (!file_exists($current_directory) || !is_writable($current_directory))
-    die("$current_directory must be available and writable by Apache.");
-  
-  $directories = array('preview' => $preview_directory, 'current' => $current_directory);
-
   basic_auth();
 
-  if (isset($_GET['status'])) {
-    $directory = $directories[$_GET['status']];
-  }
+  $source_id = $_GET['source_id'];
+  $updated_at = $_GET['updated_at'];
+  $field = $_GET['field'];
+  $filter = $_GET['filter'];
+  $filter_value = $_GET['filter_value'];
+
+  $fields = $source_parameters[$source_id]['fields'];
 
   if (isset($_GET['file'])) {
     $file_identifier = preg_replace('/\.\./', '', $_GET['file']);
@@ -29,47 +24,70 @@
       }
     }    
   }
-    // $handle = popen("$iconv_path --from-code $encoding --to-code UTF-8//IGNORE//TRANSLIT $source | LANG_ALL=UTF-8 $gnugrep_path -i -P $escaped_regexp", "r");
 
-  $iconv_path = $GLOBALS["iconv_path"];
-  if (!$iconv_path) {
-    die ('$iconv_path is not set in config.php');
-  }
-  $result = array();
-  if (isset($_GET['field'])) {
-    $fh = popen("$iconv_path --from-code $encoding --to-code UTF-8//IGNORE//TRANSLIT $file", "r");
-    // $fh = fopen($file, "r");
-    $position = array_search($_GET['field'], $fields);
-    $filter_position = array_search($_GET['filter'], $fields);
-    if ($fh) {
-      $index = 1;
-      while ($line = fgets($fh)) {
-        $row = str_getcsv($line, $delimiter);
-        if (isset($row[$position])) {
-          $value = $row[$position];
-        } else {
-          $value = null;
-        }
-        if (isset($_GET['filter_value']) && isset($row[$filter_position]) && 
-            !preg_match("/".$_GET['filter_value']."/i", $row[$filter_position])) {
-          continue;
-        }
-        if (isset($result[$value])) {
-          $result[$value] = $result[$value] + 1;
-        } else {
-          $result[$value] = 1;
-        }
-        $index++;
+  $data_source = new MongoDBDataSource($source_parameters, 'current');
+  $collection = $data_source->db->$source_id;
+  $cursor = $collection->find(['updated_at' => (int)$updated_at]);
+
+  if(isset($field)) {
+    $index = 1;
+    foreach ($cursor as $id => $value) {
+      $row = $value['row'];
+      if (isset($row[$field])) {
+        $value = $row[$field];
+      } else {
+        $value = null;
       }
-    }
+      if (isset($filter) && isset($row[$filter]) && 
+          !preg_match("/".$_GET['filter_value']."/i", $row[$filter])) {
+        continue;
+      }
+      if (isset($result[$value])) {
+        $result[$value] = $result[$value] + 1;
+      } else {
+        $result[$value] = 1;
+      }
+      $index++;
+    }    
   }
+
+  // if (isset($_GET['field'])) {
+  //   $fh = popen("$iconv_path --from-code $encoding --to-code UTF-8//IGNORE//TRANSLIT $file", "r");
+  //   // $fh = fopen($file, "r");
+  //   $position = array_search($_GET['field'], $fields);
+  //   $filter_position = array_search($_GET['filter'], $fields);
+  //   if ($fh) {
+  //     $index = 1;
+  //     while ($line = fgets($fh)) {
+  //       $row = str_getcsv($line, $delimiter);
+  //       if (isset($row[$position])) {
+  //         $value = $row[$position];
+  //       } else {
+  //         $value = null;
+  //       }
+  //       if (isset($_GET['filter_value']) && isset($row[$filter_position]) && 
+  //           !preg_match("/".$_GET['filter_value']."/i", $row[$filter_position])) {
+  //         continue;
+  //       }
+  //       if (isset($result[$value])) {
+  //         $result[$value] = $result[$value] + 1;
+  //       } else {
+  //         $result[$value] = 1;
+  //       }
+  //       $index++;
+  //     }
+  //   }
+  // }
 
 
   include('header.php');
 ?>
 <?php echo_flash(); ?>
+<h1>
+  "<?php echo $source_id ?>" (<?php echo $updated_at ? date("Y-m-d H:i:s", $updated_at) : "準備中" ?> バージョン) ファイルの分析
+</h1>
 <fieldset>
-  <legend>全選択肢を調べるファイル</legend>
+  <legend>フィールド値の分析</legend>
   <p>
   DDHではフィールドの値そのものを使って検索を行うので、CSVファイルの中でどのようなフィールドが使われているかを知る必要がある。ここではそれを調べる。
   </p>
@@ -79,16 +97,8 @@
     <legend>対象ファイル、フィールド</legend>
     <form method="get">
       <input type="hidden" name="csrf_token" value="<?php echo $_SESSION["csrf_token"] ?>">
-      <div>
-        <label for="status">preview or current</label>
-        <?php select_tag('status', ['preview', 'current']) ?>
-      </div>
-      <div>
-        <?php if (isset($directory)): ?>
-          <label for="file">ファイル</label>
-          <?php select_tag('file', scandir($directory)) ?>
-        <?php endif; ?>
-      </div>
+      <input type="hidden" name="source_id" value="<?php echo $source_id ?>">
+      <input type="hidden" name="updated_at" value="<?php echo $updated_at ?>">
       <div>
         <?php if (isset($fields)): ?>
           <label for="field">field_symbol</label>
