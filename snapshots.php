@@ -63,6 +63,9 @@
         set_flash("通常モードに戻しました");
         redirect_to();                
       }
+    } else if (isset($_POST['drop_database'])) {
+      $data_source->db->drop();
+      redirect_to();
     }
   } else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   }
@@ -201,6 +204,16 @@
     <?php endforeach; ?>
     にしてください。
   </div>
+</fieldset>
+<fieldset>
+  <!-- TODO: デモ専用につき、あとで削除 -->
+  <legend>デモ専用のコントロール</legend>
+  <form action="" method="POST" onsubmit="return confirm('本当にデータベースを初期化しますか?');">
+    <input type="hidden" name="csrf_token" value="<?php echo $_SESSION["csrf_token"]?>">
+    <input type="hidden" name="drop_database" value="" />
+    <input type="submit" value="データベースを初期化" />
+  </form>
+
 </fieldset>
 <div style="clear:both"></div>
 <?php include('footer.php') ?>
