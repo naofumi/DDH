@@ -24,7 +24,7 @@
   $directories = array($preview_directory, $current_directory,
                        $previous_directory);
 
-  basic_auth();
+  authenticate();
 
   // File was uploaded
   if ($_FILES) {

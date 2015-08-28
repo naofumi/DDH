@@ -10,7 +10,7 @@
   // Uploaded files are automatically 
   require(dirname(__FILE__).'/jsonp.php');
 
-  basic_auth();
+  authenticate();
 
   $file_identifier = preg_replace('/\.\./', '', $_GET['file']);
   $file = dirname(__FILE__).'/../data/'.$file_identifier;

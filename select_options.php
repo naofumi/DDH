@@ -2,7 +2,7 @@
   $suppress_reverse_proxy_requirement = true;
   require(dirname(__FILE__).'/jsonp.php');
 
-  basic_auth();
+  authenticate();
 
   $source_id = $_GET['source_id'];
   $updated_at = $_GET['updated_at'];

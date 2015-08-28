@@ -11,7 +11,7 @@
   require(dirname(__FILE__).'/jsonp.php');
   // require(dirname(__FILE__).'/mongodb_data_source.php');
 
-  basic_auth();
+  authenticate();
 
   $source_id = $_GET['source_id'];
   $filename = $source_parameters[$source_id]['filename'];

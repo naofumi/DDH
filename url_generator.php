@@ -2,7 +2,7 @@
   $suppress_reverse_proxy_requirement = true;
   require(dirname(__FILE__).'/jsonp.php');
 
-  basic_auth();
+  authenticate();
   if ($_GET['param_to_url']) {
     $parameters = $_GET;
 
