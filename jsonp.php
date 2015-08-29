@@ -308,62 +308,14 @@ function all_filenames() {
 }
 
 
-//////////////////////////////////////////////////////////
-// Controller utilities
-//////////////////////////////////////////////////////////
-function redirect_to($url = null) {
-	if (!$url) {
-    // The server does not know that the request is coming 
-    // from a reverse proxy and hence $_SERVER["REQUEST_URI"]
-    // will be the castle104.com path which is not good.
-    // Here, we fix it back to the URL before the reverse proxy.
-    $server_url = $_SERVER["REQUEST_URI"];
-    $client_url = preg_replace("/^\/ddh_[^\/]+/", "/ddh_jp", $server_url);
-		$url = $client_url;
-	}
-	header("Location: ".$url);
-	exit();
-}
+require_once('lib/controller_utilities.php');
 
-function set_flash($message) {
-	$_SESSION["flash"] = $message;
-}
-
-function echo_flash() {
-	if (isset($_SESSION["flash"]) && $_SESSION["flash"]) {
-		echo "<div class='notice'>".$_SESSION["flash"]."</div>";	
-		$_SESSION["flash"] = null;
-	}
-}
-
-function add_query_to_url($url, $params = array()) {
-	$original_query_string = array_lookup(parse_url($url), 'query');
-	$original_path = array_lookup(parse_url($url), 'path');
-	$original_params = array();
-	foreach(explode('&', $original_query_string) as $query_set) {
-		$single_param = explode('=', $query_set);
-		$original_params[urldecode($single_param[0])] = urldecode($single_param[1]);
-	}
-	return $original_path."?".http_build_query(array_merge($original_params, $params));
-}
-
+require_once('lib/url.php');
 require_once('lib/authentication.php');
 require_once('lib/logger.php');
 require_once('lib/csrf.php');
+require_once('lib/debug.php');
 
-
-///////////////////////////////////////////
-// Debug
-//////////////////////////////////////////
-function str_var_dump($variable){
-	ob_start();
-	var_dump($variable);
-  return ob_get_clean();
-}
-
-function log_var_dump($variable){
-	error_log(str_var_dump($variable));
-}
 
 ////////////////////////////////////////////
 // Utility functions
