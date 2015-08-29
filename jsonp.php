@@ -92,7 +92,7 @@ function row_convert_encoding($row, $encoding) {
 /////////////////////////////////////////////////
 
 function is_preview() {
-  return !!$_SESSION['preview'];
+  return !!(isset($_SESSION['preview']) && $_SESSION['preview']);
 	// return isset($_GET['pv']);
 }
 
@@ -347,95 +347,10 @@ function add_query_to_url($url, $params = array()) {
 	return $original_path."?".http_build_query(array_merge($original_params, $params));
 }
 
-//////////////////////////////////////////////////////////
-// Authentication
-//////////////////////////////////////////////////////////
+require_once('lib/authentication.php');
+require_once('lib/logger.php');
+require_once('lib/csrf.php');
 
-// http://www.webdesignleaves.com/wp/php/228/
-function authenticate($users = false){
-  global $admin_users;
-  global $wordpress_home_url;
-  global $secret_key;
-
-  if (isset($admin_users)) {
-    if ($users == false)
-      $users = $admin_users;
-    // We suppress reverse_proxy_requirement only for pages behind 
-    // authentication.
-    global $suppress_reverse_proxy_requirement;
-    $suppress_reverse_proxy_requirement = true;
-
-    if (isset($_SERVER['PHP_AUTH_USER']) and isset($_SERVER['PHP_AUTH_PW'])){
-      $user = $users[$_SERVER['PHP_AUTH_USER']];
-      if ($user) {
-        if (crypt($_SERVER['PHP_AUTH_PW'], $user["salt"]) == $user["hashed_password"]) {
-          return;
-        }
-      }
-    }
-    header('WWW-Authenticate: Basic realm="DDH Restricted Area"');
-    header('HTTP/1.0 401 Unauthorized');
-    header('Content-type: text/html; charset='.mb_internal_encoding());
-    die("Authorization Failed.");    
-  } else if (isset($wordpress_home_url)) {
-    // Wordpress authentication
-    if ($_SESSION['email']) {
-      // We suppress reverse_proxy_requirement only for pages behind 
-      // authentication.
-      global $suppress_reverse_proxy_requirement;
-      $suppress_reverse_proxy_requirement = true;
-    } else if ($_GET['id'] && $_GET['email'] && $_GET['roles'] && $_GET['time'] && $_GET['token']){
-      // If we have an email, time, and token in the request params,
-      // this means we have received a redirect from the authentication server.
-      $verify_token = crypt($_GET['email'].$_GET['roles'].$_GET['id'].$_GET['time'], $secret_key);
-      if ($verify_token == $_GET['token']) {
-        // LOGIN
-        $_SESSION['id'] = $_GET['id'];
-        $_SESSION['email'] = $_GET['email'];
-        $_SESSION['roles'] = $_GET['roles'];
-      } else {
-        // Failed login
-        header("location: $wordpress_home_url/wp-login.php");        
-      }
-
-    } else {
-      // If not authenticated, then we send a redirect to Wordpress
-      // TODO: doesn't manage HTTPS
-      $params = array('return_to' => "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]");
-      $query_string = http_build_query($params);      
-
-      header("location: $wordpress_home_url/current_user?$query_string");
-    }
-  }
-}
-
-///////////////////////////////////////////////////////////
-// Logging
-//////////////////////////////////////////////////////////
-function log_request() {
-	error_log($_SERVER['REQUEST_METHOD']." ".$_SERVER['REQUEST_URI']." Accept:".
-	          $_SERVER['HTTP_ACCEPT']." IP:".$_SERVER['REMOTE_ADDR']." Request:".var_export($_REQUEST, true).
-	          " Session:".var_export((defined('_SESSION') ? $_SESSION : null), true) );
-}
-
-///////////////////////////////////////////////////////////
-// CSFR token management
-///////////////////////////////////////////////////////////
-function renew_csrf_token(){
-  $_SESSION["csrf_token"] = md5(session_id());
-}
-
-function verify_csrf_token(){
-	if ($_SERVER['REQUEST_METHOD'] !== "GET") {
-		if ($_SESSION["csrf_token"] !== $_REQUEST["csrf_token"]) {
-			raise_csrf_error();
-		}
-	}
-}
-
-function raise_csrf_error(){
-	die("csrf_token does not match with SESSION:".$_SESSION["csrf_token"]." and REQUEST: ".$_REQUEST["csrf_token"]);
-}
 
 ///////////////////////////////////////////
 // Debug
