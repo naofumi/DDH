@@ -120,9 +120,9 @@ class MongoDBDataSource {
   // Default is 'current'
   // Usually, you would use `preview_version()` to get the version in
   // the controller (jsonp.php).
-  function __construct($source_parameters, $snapshot_version) {
+  function __construct($source_parameters, $snapshot_version = 'current') {
     $db_name = $this->db_name();
-    $this->snapshot_version = $snapshot_version ? $snapshot_version : 'current';
+    $this->snapshot_version = $snapshot_version;
     $this->source_parameters = $source_parameters;
     // Create a Mongo conenction
     $this->mongo = new MongoClient();
