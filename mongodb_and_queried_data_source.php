@@ -35,7 +35,7 @@ class MongoDBAndQueriedDataSource extends MongoDBQueriedDataSourceBase {
                      ['$regex' => new MongoRegex("/".$this->partial_match_regex($partial_match_fields[$key])."/i")]
                     ]);
       } else {
-        $expanded_query = $this->get_expanded_query_in_key($key);
+        $expanded_query = $this->get_modified_query_in_key($key);
         if (preg_match("/^\/.*\/$/", $expanded_query[1])) {
           // If the $expanded_query specifies a regex, then 
           // we simpy apply that regex to the search.
