@@ -10,6 +10,10 @@
 // 4. Better scaling
 // 5. etc.
 //
+// The DataSource class is the core class that allows us to
+// extract information from multiple CSV files and to join them
+// based on their IDs (the leftmost column values).
+//
 // #### Usage
 //
 // As with the original DataSource class, the MongoDBDataSource class
@@ -34,7 +38,7 @@
 // array and a list of IDs. Then you can query the object based
 // on IDs to retrieve data.
 //
-// $data_source = new DataSource($source_parameters, get_ids());
+// $data_source = new MongoDBDataSource($source_parameters);
 // // then we set the ids like so;
 // $data_source->set_ids($ids);
 //
@@ -67,6 +71,23 @@
 // Because we store the `updated_at` we can store multiple versions of the
 // CSV files.
 // 
+// #### Mongo DB structure ####
+// 
+// 1. The name of the MongoDB database
+// The name of the MongoDB database is derived from the name of the 
+// implementation folder. It will be something like `ddh_iwai-chem_15ff4e`
+//
+// 2. Collections
+// The database has a special collection named `snapshots` and collections
+// for each CSV file.
+// - snapshots
+// The snapshot collection manages the metadata for each snapshot. This
+// includes published_at, sources (the versions of each source CSV),
+// whether it is the current snapshot and the associated comment.
+// - collections for each CSV
+// These collections contain the data from the CSV file (in the `row` as an assocated list)
+// and `updated_at`, `row_num` and `id` (which is a unique identifier for that product)
+//
 // ##### Upload schemes #######
 // Files may be uploaded either through direct access to the filesystem
 // through methods like ftp, ssh or WebDAV. This is best if we want
@@ -147,7 +168,8 @@ class MongoDBDataSource {
   // when we initially populate the select menu options.
   //
   // TODO: MongoDB should allow us to use these more effectively and more easily.
-  // We will look into this.
+  // We will look into this. Look at #28 of select_options.php
+  // Also look into http://docs.mongodb.org/master/core/aggregation-pipeline/
   public function field_values($field){
     return null;
   }
