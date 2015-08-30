@@ -770,13 +770,17 @@ class MongoDBDataSource {
 	// $array. If they are not present, then they will 
 	// be sent to the end of the array.
 	protected function cmp_in_array($a, $b, $array) {
-	  $a_pos = array_search($a, $array);
-	  $b_pos = array_search($b, $array);
-    if ($a_pos === false)
-      $a_pos = 9999999;
-    if ($b_pos === false)
-      $b_pos = 9999999;
-    return $this->cmp_norm($a_pos - $b_pos);
+    if ($a == $b) {
+      return 0;
+    } else {
+      $a_pos = array_search($a, $array);
+      $b_pos = array_search($b, $array);
+      if ($a_pos === false)
+        $a_pos = 9999999;
+      if ($b_pos === false)
+        $b_pos = 9999999;
+      return $this->cmp_norm($a_pos - $b_pos);      
+    }
 	}
 
 	// Converts signed integer to -1, 0, 1
