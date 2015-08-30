@@ -15,6 +15,64 @@ require_once(dirname(__FILE__).'/mongodb_data_source.php');
 // you to use partial matches for the egrep phase and
 // regular expressions for the `confirm_assoc_list_matches_query`
 // phase. See the comments on `config.php` for details
+//
+// ## Usage (of subclasses)
+//
+// $data_source = new MongoDBAntibodyQueryDataSource($source_parameters, $_GET, 'jackson_second', preview_version());
+//
+// The query is usually taken directly from the GET parameters.
+// The query is translated into a mongoDB query in the following way.
+//
+// 1. If a field is specified as a combo_field, then we do a 
+//    partial match against each subfield and do an OR of the results.
+// 2. If a field is specified as a partial_match_field, then
+//    we do a partial match against the field.
+// 3. Othewise, we modify the query for the field according to
+//    the query_modifiers. We then determine if the query
+//    specifies a regular expression, a numeric comparison,
+//    or a regular string. We construct the query accordingly.
+// 4. The final mongoDB query is an AND of each field.
+//
+// This means that we can perform the following types of queries are
+// supported. This should cover most cases.
+// 1. Full text matches and tokenised partial text matches 
+//    (case-insensitive) are very simple to do.
+// 2. Partial text matches (tokenised) against multiple fields 
+//    are supported (OR logic).
+// 3. Regular expression matches against single fields are supported.
+// 4. Numeric comparisons against numeric fields ("numeric_fields"
+//    in $source_parameters) are supported.
+//
+// The following are methods to configure the QueryDataSource object.
+//
+//  * Specify combo_fields for OR behaviour
+//  $data_source->set_combo_fields(array("combo_name" => array("name", "alternative_name", "cat_no", "reactivity")));
+//
+//  * Specify partial match fields for partial match behaviour
+//  $data_source->set_partial_match_fields(array("name", "reactivity"));
+//
+//  * Specify facet fields to enable drill down behaviour
+// $data_source->set_facet_fields(array('reactivity', 'label', 'host', 'form', 'target', 'kyushu', 'multi_label', 'for_flow_cytometry', 'for_eikyu_funyu', 'for_fluorecent_wb', 'price'));
+//
+//  * Set the maximum number of results to retrieve
+//  $data_source->set_maximum_results(1000);
+//
+//  * Set query modifiers which will modify certain queries.
+//    Queries are modified so that certain values perform
+//    special queries. This is useful when we want a query
+//    for `any`, etc.
+//    This also affects facet grouping.
+//  $data_source->set_query_modifiers(['kyushu' => ['any' =>"/[^-]/"]]);
+//
+//  * Set sort order.
+//    Sort order of the results. Previously we had to subclass
+//    MongoDBQueriedDataSourceBase and override `sort_callback()` 
+//    to supply the sorting callback function. We can now also
+//    assign a lambda through the `set_sort_callback()` function.
+//    (TODO: not yet implemented)
+//  $data_source->set_sort_callback(function() {[callback function code]})
+
+
 class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
   protected $query;
   protected $query_target;
