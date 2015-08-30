@@ -186,7 +186,7 @@ class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
     $fields = $this->source_parameters[$this->query_target]['fields'];
     foreach($combo_fields as $combo_field_name => $sub_fields) {
       usort($sub_fields, function($a, $b) use ($fields) {
-        $this->cmp_in_array($a, $b, $fields);
+        cmp_in_array($a, $b, $fields);
       });
     }
     $this->combo_fields = $combo_fields;
@@ -255,12 +255,7 @@ class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
       $end_time = microtime(TRUE);
       error_log("BENCHTIME update_from_source_id(join allother data sources): ".($end_time - $join_other_start_time));
 
-      $sort_start_time = microtime(TRUE);
-      if (method_exists($this, "sort_callback")) {
-        uasort($this->data, array($this, "sort_callback"));
-      }
-      $end_time = microtime(TRUE);
-      error_log("BENCHTIME sort_callback ".($end_time - $sort_start_time));
+      $this->sort_data();
     }
   }
 

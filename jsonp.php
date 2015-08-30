@@ -313,6 +313,7 @@ require_once('lib/authentication.php');
 require_once('lib/logger.php');
 require_once('lib/csrf.php');
 require_once('lib/debug.php');
+require_once('lib/sorting.php');
 
 
 ////////////////////////////////////////////

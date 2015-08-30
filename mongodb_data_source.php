@@ -123,6 +123,8 @@ class MongoDBDataSource {
   protected $ids;
   protected $maximum_results;
 
+  protected $sort_callback_lambda;
+
   ///// Reflection methods ////
   // Methods that tell us about the database state
 
@@ -182,19 +184,29 @@ class MongoDBDataSource {
   // The $this->data format is keys are the $ids, and the values are DataRow objects.
   //
   // The $this->ids are searched in all sources and data is joined together.
-  //
-  // If $this->sort_callback() exists, then it is called to sort the data.
+  // If $this->sort_callback_lambda is set via `set_sort_callback()`
+  // or if $this->sort_callback() exists, 
+  // then it is called to sort the data.
   // sort_callback($a, $b) should return an integer indicating sort order.
   protected function retrieve_data() {
     if (!isset($this->data)){
       $this->data = array();
       foreach($this->sources() as $source_id) {
         $this->update_from_source_id($source_id);
-      }     
-      if (method_exists($this, "sort_callback")) {
-        uasort($this->data, array($this, "sort_callback"));
       }
+      $this->sort_data();
     }
+  }
+
+  protected function sort_data() {
+    $sort_start_time = microtime(TRUE);
+    if (isset($this->sort_callback_lambda)) {
+      uasort($this->data, $this->sort_callback_lambda);
+    } else if (method_exists($this, "sort_callback")) {
+      uasort($this->data, array($this, "sort_callback"));
+    }
+    $end_time = microtime(TRUE);
+    error_log("BENCHTIME sort_callback ".($end_time - $sort_start_time));
   }
 
   // Update $this->data with the data from a single $source_id 
@@ -663,7 +675,7 @@ class MongoDBDataSource {
       if ($this->field_values($field)) {
         $results_for_field = $result[$field];
         uksort($results_for_field, function($a, $b) use ($field) {
-          return $this->cmp_in_array($a, $b, $this->field_values($field));
+          return cmp_in_array($a, $b, $this->field_values($field));
         });
         $result[$field] = $results_for_field;
       }
@@ -758,41 +770,15 @@ class MongoDBDataSource {
 	// Functions for sorting
 	/////////////////////////////////////////////////
 
-	// The PHP strcasecmp function return value is not
-	// limited to -1, 0, 1, which makes it difficult to
-	// use when we have multiple sort criteria.
-	// strcasecmp_norm only returns -1, 0, 1.
-	protected function strcasecmp_norm($a, $b) {
-	  return $this->cmp_norm(strcasecmp($a, $b));
-	}
-
-	// Compares $a and $b based on their indices in
-	// $array. If they are not present, then they will 
-	// be sent to the end of the array.
-	protected function cmp_in_array($a, $b, $array) {
-    if ($a == $b) {
-      return 0;
-    } else {
-      $a_pos = array_search($a, $array);
-      $b_pos = array_search($b, $array);
-      if ($a_pos === false)
-        $a_pos = 9999999;
-      if ($b_pos === false)
-        $b_pos = 9999999;
-      return $this->cmp_norm($a_pos - $b_pos);      
-    }
-	}
-
-	// Converts signed integer to -1, 0, 1
-	protected function cmp_norm($cmp) {
-	  if ($cmp > 0) {
-	    return 1;
-	  } else if ($cmp < 0) {
-	    return -1;
-	  } else {
-	    return 0;
-	  }    
-	}
+  // Previously, we needed to override `sort_callback()`
+  // to do customised sorting. However, that meant
+  // that we needed to subclass all the time.
+  // Instead, you can set the callback function using
+  // a lambda. This will take precedence over 
+  // a `sort_callback()` implementation.
+  public function set_sort_callback($callback_func) {
+    $this->sort_callback_lambda = $callback_func;
+  }
 
 }
 
