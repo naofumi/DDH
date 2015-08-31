@@ -378,6 +378,9 @@ class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
       }
     }
     $this->facets = $facets;
+
+    $this->sort_facets();
+
     return $this->facets;
   }
 

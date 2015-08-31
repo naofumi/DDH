@@ -619,7 +619,6 @@ class MongoDBDataSource {
         return array();
       } else {
         $this->retrieve_facets();
-        $this->sort_facets();
         return $this->facets;     
       }
   	}
@@ -659,15 +658,17 @@ class MongoDBDataSource {
 
     $end_time = microtime(TRUE);
     error_log("BENCHMARK retrieve_facets(calculate facets from data): ".($end_time - $start_time));
-
   	$this->facets = $result;
+
+    $this->sort_facets();
+
   	return $this->facets;  	
   }
 
   // Sort facets.
   // If a field has been set in $this->field_values(),
   // then that order will be used. Otherwise
-  // we will not resort (hence facets will be returned in order of the results)
+  // we will not re-sort (hence facets will be returned in order of the results)
   public function sort_facets() {
     $result = $this->facets;
     $fields = $this->facet_fields;
