@@ -3,7 +3,7 @@
 
   $suppress_reverse_proxy_requirement = true;
   require(dirname(__FILE__).'/jsonp.php');
-  require(dirname(__FILE__).'/table_tagger.php');
+  require(dirname(__FILE__).'/lib/table_tagger.php');
 
   authenticate();
   $parameters = $_GET;

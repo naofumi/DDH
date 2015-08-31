@@ -348,8 +348,7 @@ if (!function_exists('str_getcsv')) {
 }
 
 // These are required last because they depend on the above functions.
-require_once(dirname(__FILE__).'/view_helpers.php');
-require_once(dirname(__FILE__).'/data_augmenters.php');
+require_once(dirname(__FILE__).'/lib/view_helpers.php');
 
 ////////////////////////////////////////////////////////////
 // Initialize

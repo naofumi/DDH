@@ -1,7 +1,7 @@
 <?php
 require_once (dirname(__FILE__) . '/simpletest/autorun.php');
-require_once (dirname(__FILE__) . '/../table_tagger.php');
-require_once (dirname(__FILE__) . '/../view_helpers.php');
+require_once (dirname(__FILE__) . '/../lib/table_tagger.php');
+require_once (dirname(__FILE__) . '/../lib/view_helpers.php');
 
 class TableTaggerTest extends UnitTestCase {
   public $html;
