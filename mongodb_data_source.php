@@ -770,10 +770,10 @@ class MongoDBDataSource {
     $result = $this->facets;
     $fields = $this->facet_fields;
     foreach ($fields as $field) {
-      if ($this->field_values($field)) {
+      if (tags_for_field($field)) {
         $results_for_field = $result[$field];
         uksort($results_for_field, function($a, $b) use ($field) {
-          return cmp_in_array($a, $b, $this->field_values($field));
+          return cmp_in_array($a, $b, tags_for_field($field));
         });
         $result[$field] = $results_for_field;
       }
