@@ -289,11 +289,31 @@ class MongoDBDataSource {
     }
   }
 
+  // See #set_sort_callback() for a description of how this works.
   protected function sort_data() {
     $sort_start_time = microtime(TRUE);
     if (isset($this->sort_callback_lambda)) {
-      uasort($this->data, $this->sort_callback_lambda);
+      if (is_array($this->sort_callback_lambda)) {
+        $sort_specification = $this->sort_callback_lambda;
+        $callback_func = function($a, $b) use ($sort_specification) {
+          foreach($sort_specification as $sort_field => $sort_type) {
+            if ($sort_type == 'field_settings') {
+              $cmp = cmp_in_array($a->get($sort_field), $b->get($sort_field), tags_for_field($sort_field));
+              if ($cmp !== 0) {return $cmp;}
+            } else if (is_callable(explode(" ", $sort_type)[0])) {
+              $cmp = $sort_type($a->get($sort_field), $b->get($sort_field));
+              if ($cmp !== 0) {return $cmp;}
+            } else {
+              throw new Exception ("Unavailable sort_type '$sort_type'");
+            }
+          }
+        };
+        uasort($this->data, $callback_func);
+      } else if (is_callable($this->sort_callback_lambda)) {
+        uasort($this->data, $this->sort_callback_lambda);        
+      }
     } else if (method_exists($this, "sort_callback")) {
+      // If a subclass has implemented a `sort_callback()` method.
       uasort($this->data, array($this, "sort_callback"));
     }
     $end_time = microtime(TRUE);
@@ -874,6 +894,25 @@ class MongoDBDataSource {
   // Instead, you can set the callback function using
   // a lambda. This will take precedence over 
   // a `sort_callback()` implementation.
+  //
+  // $callback_func can also be supplied as an array in the 
+  // following format;
+  // ['reactivity' => 'field_settings', 
+  //  'form' => 'field_settings', 
+  //  'label' => 'field_settings',
+  //  'target' => 'field_settings',
+  //  'host' => 'strcasecmp_norm asc',
+  //  'cat_no' => 'strnatcasecmp asc']
+  // for simplicity.
+  //
+  // If the sort is very simple, you can just supply a 
+  // callback function name as a string.
+  //
+  // Performance-wise, providing a callback by either
+  // overriding in a subclass or by setting a lambda
+  // are virtually identical. Providing the sort conditions
+  // as an array is about 5-10% slower, but not 
+  // a significant issue in the vast majority of cases.
   public function set_sort_callback($callback_func) {
     $this->sort_callback_lambda = $callback_func;
   }
