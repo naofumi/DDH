@@ -2,7 +2,7 @@
 $bench_start = microtime(true);
 
 require_once(dirname(__FILE__).'/Cache/Lite.php');
-require_once(dirname(__FILE__).'/mongodb_data_source.php');
+require_once(dirname(__FILE__).'/lib/mongodb_data_source.php');
 require_once(dirname(__FILE__).'/../config.php');
 
 ///////////////////////////////////////////////

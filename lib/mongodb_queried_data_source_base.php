@@ -228,7 +228,6 @@ class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
     $assoc_list = $this->get_assoc_list_for_query();
 
     $this->update_data_with_assoc_list($assoc_list);
-
     $this->ids = array_keys($assoc_list);
   }
 

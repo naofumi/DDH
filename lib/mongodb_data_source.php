@@ -133,7 +133,8 @@ class MongoDBDataSource {
   // We get the db_name from the parent directory of the `ddh` directory.
   // By convention, this will be something like `ddh_iwai-chem_15ff4e`
   protected function db_name() {
-    $ddh_folder = __DIR__;
+    $lib_folder = __DIR__;
+    $ddh_folder = dirname($lib_folder);
     $client_implementation_folder = dirname($ddh_folder);
     return basename($client_implementation_folder);
   }
@@ -194,8 +195,6 @@ class MongoDBDataSource {
       $aggregated = $this->db->$source_id->aggregate($pipeline);
 
       foreach ($aggregated['result'] as $row) {
-        // var_dump($row);
-        // echo "---<br>";
         $_id = $row['_id'];
         $count = $row['count'];
         $result[$_id] = $count;

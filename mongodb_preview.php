@@ -9,7 +9,6 @@
   // the config file (filenames must be consistent).
   // Uploaded files are automatically 
   require(dirname(__FILE__).'/jsonp.php');
-  // require(dirname(__FILE__).'/mongodb_data_source.php');
 
   authenticate();
 
