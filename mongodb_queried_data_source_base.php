@@ -68,7 +68,6 @@ class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
   protected $maximum_results;
   protected $combo_fields;
   protected $over_limit;
-  protected $query_modifiers = array();
 
 
   // We use the $id property of the superclass, but this
@@ -143,7 +142,7 @@ class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
 
 
   // Get the modified query from the value set in
-  // $this->set_query_modifiers()
+  // field_values.php
   protected function get_modified_query_in_key($key) {
     $key = strtolower($key);
     $query = $this->query[$key];
@@ -185,35 +184,6 @@ class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
     $this->combo_fields = $combo_fields;
     $this->clean_query();
     $this->recalculate_partial_match_fields();
-  }
-
-
-  // query_modifiers are used by the QueriedDataSource class
-  // to modify query keywords.
-  // They are often used when retrieving facets and grouping fields
-  // together.
-  //
-  // In the following example, a query for ?reactivity=hamster（ハムスター）
-  // will be converted to a query that does a match for "/hamster/".
-  //
-  // $query_expanders = array('reactivity' => 
-  //                             array('hamster（ハムスター）' => 
-  //                                     array("hamster", "/hamster/")));
-  //
-  // CAUTION: The value in the array is case-insensitive for matching. However
-  //          the exact value will be displayed in drill-down menus, to make the capitals appropriate.
-  //
-  // CAUTION TODO: Since we are now on MongoDB, we don't need the first
-  //               query parameter anymore. However, add something that 
-  //               won't evaluate to false, because we still use it.
-  //
-  // TODO: We want to add all stuff related to customizing the query
-  //       after initilizing the query datasource object. That is in
-  //       the endpoints like search.php. We will move the stuff away
-  //       from config.php. config.php should only be concerned with the
-  //       data and not how we query it.
-  public function set_query_modifiers($query_modifiers) {
-    $this->query_modifiers = $query_modifiers;
   }
 
   private function compare_string_length($a, $b) {
