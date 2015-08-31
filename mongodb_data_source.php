@@ -124,6 +124,8 @@ class MongoDBDataSource {
   protected $maximum_results;
 
   protected $sort_callback_lambda;
+  protected $all_values_in_field_of_source_cache = array();
+
 
   ///// Reflection methods ////
   // Methods that tell us about the database state
@@ -177,6 +179,95 @@ class MongoDBDataSource {
     return null;
   }
 
+  // Get all the values in the $field of the $source_id.
+  // Return as an associated list with field values and counts.
+  public function all_values_in_field_of_source($field, $source_id) {
+    if (!isset($this->all_values_in_field_of_source_cache[$source_id])) {
+      $this->all_values_in_field_of_source_cache[$source_id] = array();
+    }
+    if (!isset($this->all_values_in_field_of_source_cache[$source_id][$field])) {
+      $start_time = microtime(TRUE);
+      $result = array();
+
+      $pipeline = ['$group' => ['_id' => '$row.'.$field, 'count' => ['$sum' => 1]]];
+
+      $aggregated = $this->db->$source_id->aggregate($pipeline);
+
+      foreach ($aggregated['result'] as $row) {
+        // var_dump($row);
+        // echo "---<br>";
+        $_id = $row['_id'];
+        $count = $row['count'];
+        $result[$_id] = $count;
+      }
+
+      $end_time = microtime(TRUE);
+      error_log("BENCHMARK values_in_field_of_source($field, $source_id): ".($end_time - $start_time));
+      $this->all_values_in_field_of_source_cache[$source_id][$field] = $result;
+    }
+
+    return $this->all_values_in_field_of_source_cache[$source_id][$field];
+  }
+
+  // This returns the counts in the whole source
+  // for a field specified in $field_settings.
+  // We only return counts for tags in $field_settings.
+  //
+  // It is capable of returning counts for tags using
+  // regular expression queries or ddhq: style numeric queries,
+  // addition to counting tags which match with strings.
+  //
+  // We also return the values that could not be captured by
+  // the queries in $field_settings, and report them for quality control.
+  // You can also check facets with count == 0 for unused tags.
+  //
+  // The return value format is;
+  // ["result" => ["human" => 612, "mouse" => 300 ....],
+  //  "uncaptured_values" => ["交差動物種", "-", ""]
+  //]
+  public function counts_for_field_of_source($field, $source_id) {
+    $all_values = $this->all_values_in_field_of_source($field, $source_id);
+    if (!settings_for_field($field)) {
+      die("No settings for $field in field_values.php");
+    }
+    return $this->aggregate_counts_using_settings($all_values, settings_for_field($field));
+  }
+
+  protected function aggregate_counts_using_settings($value_counts, $field_settings) {
+    $result = array();
+    $uncaptured_values = array();
+
+    foreach($value_counts as $value => $count) {
+      $match_found_for_value = false;
+      foreach($field_settings as $name => $query) {
+        if ($query === null && $value == $name) {
+          $result[$name] = $count;
+          $match_found_for_value = true;
+        } else if (preg_match('/\/(.*)\//', $query)) {
+          if (preg_match($query."ui", $value)) {
+            if (!isset($result[$name])) {
+              $result[$name] = 0;
+            }
+            $result[$name] += $count;
+            $match_found_for_value = true;
+          }
+        } else if (preg_match("/^ddhq:/", $query)) {
+          $ddhq_range = preg_replace("/^ddhq:/", "", $query);
+          if (is_in_range($value, $ddhq_range)) {
+            if (!isset($result[$name])) {
+              $result[$name] = 0;
+            }
+            $result[$name] += $count;
+            $match_found_for_value = true;
+          }
+        }
+      }
+      if (!$match_found_for_value) {
+        array_push($uncaptured_values, $value);
+      }
+    }
+    return ["result" => $result, "uncaptured_values" => $uncaptured_values];
+  }
 
   ////// Data retrieval methods ////////
 
@@ -633,37 +724,43 @@ class MongoDBDataSource {
   // Get the raw facet data. Not sorted or cached.
   // Takes less than 30ms on reactivity:human, so it's OK to do the loops in PHP
   public function retrieve_facets() {
-		$this->retrieve_data();
+    $this->retrieve_data();
+    $fields = $this->facet_fields;
 
     $start_time = microtime(TRUE);
-  	$fields = $this->facet_fields;
-  	$result = array();
-  	// Initialize $results array
-  	foreach($fields as $field) {
-  		$result[$field] = array();
-  	}
-  	// Count facets
-  	foreach ($this->data as $row) {
-  		foreach($fields as $field) {
-  			$value = $row->get($field);
+
+    $result = array();
+    // Initialize $results array
+    foreach($fields as $field) {
+      $result[$field] = array();
+    }
+    // Count facets
+    foreach($fields as $field) {
+      foreach ($this->data as $row) {
+        $value = $row->get($field);
         if (!$value)
           continue;
 
-  			if (!isset($result[$field][$value])) {
-  				$result[$field][$value] = 0;
-  			}
-  			$result[$field][$value]++;
-  		}
-  	}
+        if (!isset($result[$field][$value])) {
+          $result[$field][$value] = 0;
+        }
+        $result[$field][$value]++;
+      }
+
+      if (settings_for_field($field)) {
+        $result[$field] = $this->aggregate_counts_using_settings($result[$field], settings_for_field($field))['result'];
+      }
+    }
 
     $end_time = microtime(TRUE);
     error_log("BENCHMARK retrieve_facets(calculate facets from data): ".($end_time - $start_time));
-  	$this->facets = $result;
+    $this->facets = $result;
 
     $this->sort_facets();
 
-  	return $this->facets;  	
+    return $this->facets;
   }
+
 
   // Sort facets.
   // If a field has been set in $this->field_values(),

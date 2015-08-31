@@ -4,17 +4,14 @@ require_once(dirname(__FILE__).'/mongodb_data_source.php');
 // a $source_id specified in $query_target. The $query is used to generate a 
 // list of $ids from which rows will be compiled from all the data sources 
 // through the base MongoDBDataSource class functionality.
-// class functionality.
 //
 // This class does not implement the `mongodb_query()` method which
 // generates the parameters to send to MongoDB.
 // To actually use this DataSource, subclass this and implement `mongodb_query()` method
 //
-// To allow more flexible and powerful matching, you can set
-// the $query_expanders global in `config.php`. This will allow
-// you to use partial matches for the egrep phase and
-// regular expressions for the `confirm_assoc_list_matches_query`
-// phase. See the comments on `config.php` for details
+// To allow more flexible and powerful matching, set the possible query values
+// in `field_values.php`. You can use regular expressions and 
+// numeric range matching.
 //
 // ## Usage (of subclasses)
 //
@@ -28,7 +25,7 @@ require_once(dirname(__FILE__).'/mongodb_data_source.php');
 // 2. If a field is specified as a partial_match_field, then
 //    we do a partial match against the field.
 // 3. Othewise, we modify the query for the field according to
-//    the query_modifiers. We then determine if the query
+//    the `field_values.php`. We then determine if the query
 //    specifies a regular expression, a numeric comparison,
 //    or a regular string. We construct the query accordingly.
 // 4. The final mongoDB query is an AND of each field.
@@ -57,22 +54,12 @@ require_once(dirname(__FILE__).'/mongodb_data_source.php');
 //  * Set the maximum number of results to retrieve
 //  $data_source->set_maximum_results(1000);
 //
-//  * Set query modifiers which will modify certain queries.
-//    Queries are modified so that certain values perform
-//    special queries. This is useful when we want a query
-//    for `any`, etc.
-//    This also affects facet grouping.
-//  $data_source->set_query_modifiers(['kyushu' => ['any' =>"/[^-]/"]]);
-//
 //  * Set sort order.
 //    Sort order of the results. Previously we had to subclass
 //    MongoDBQueriedDataSourceBase and override `sort_callback()` 
 //    to supply the sorting callback function. We can now also
 //    assign a lambda through the `set_sort_callback()` function.
-//    (TODO: not yet implemented)
 //  $data_source->set_sort_callback(function() {[callback function code]})
-
-
 class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
   protected $query;
   protected $query_target;
@@ -159,14 +146,20 @@ class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
   // $this->set_query_modifiers()
   protected function get_modified_query_in_key($key) {
     $key = strtolower($key);
-    $query = strtolower($this->query[$key]);
+    $query = $this->query[$key];
 
-    if (array_key_exists($key, $this->query_modifiers) && 
-        ($modified_query = $this->array_value_for_key_case_insensitive($this->query_modifiers[$key], $query)) &&
-        $modified_query[0]) {
-        return $modified_query;
+    if (settings_for_field($key)) {
+      if (array_key_exists($query, settings_for_field($key))) {
+        if (settings_for_field($key)[$query] === null) {
+          return [$query, $query];
+        } else {
+          return [$query, settings_for_field($key)[$query]];
+        }
+      } else {
+        die("Value for $query in field $key not set in field_values.php");
+      }
     } else {
-        return array($query, $query);
+      return [$query, $query];
     }
   }
 
@@ -317,14 +310,6 @@ class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
     }
   }
 
-  // This should return true if the current $row (as represented in the $assoc_list)
-  // matches the query specified in $this->query. It should return either true
-  // or false.
-  protected function confirm_assoc_list_matches_query($assoc_list){
-    // die('Must implement confirm_assoc_list_matches_query in subclass');
-    return true;
-  }
-
   // Clean the query.
   //
   // 1. Reorder the $query hash by the order in the source_parameters.
@@ -352,36 +337,12 @@ class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
     return $result;
   }
 
-
-  // The facets function in the parent DataSource does not take expanded_queries
-  // into consideration. Here we add facet information for the
-  // expanded queries.
-  public function retrieve_facets() {
-    $facets = parent::retrieve_facets();
-
-    $fields = $this->facet_fields;
-    foreach ($fields as $field_name) {
-      if (!isset($facets[$field_name])) {continue;};
-
-      if (isset($this->query_modifiers[$field_name])) {
-        foreach ($this->query_modifiers[$field_name] as $param => $modified_query) {
-          $total_count = 0;
-          foreach ($facets[$field_name] as $value => $count) {
-            if (preg_match($modified_query[1]."ui", strtolower($value))) {
-              $total_count = $total_count + $count;
-            }
-          }
-          if ($total_count > 0) {
-            $facets[$field_name][$param] = $total_count;            
-          }
-        }
-      }
-    }
-    $this->facets = $facets;
-
-    $this->sort_facets();
-
-    return $this->facets;
+  // Returns all the values for the $field in the
+  // current query_target together with count.
+  //
+  // Use this to get select_tag options when no
+  // results are returned.
+  public function all_values_in_field($field) {
+    return $this->all_values_in_field_of_source($field, $this->query_target);
   }
-
 }
