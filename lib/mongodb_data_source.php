@@ -1,5 +1,5 @@
 <?php
-require_once(dirname(__FILE__).'/data_row.php');
+require_once(dirname(__FILE__).'/data_row_base.php');
 // The MongoDBDataSource class is the base class for MongoDB backed
 // DDH. We plan to move everything from the original DataSource class
 // to the MonogDBDataSource as soon as possible. The advantages of
