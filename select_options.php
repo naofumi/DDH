@@ -12,23 +12,12 @@
 
   $fields = $source_parameters[$source_id]['fields'];
 
-  if (isset($_GET['file'])) {
-    $file_identifier = preg_replace('/\.\./', '', $_GET['file']);
-    $file = $directory.$file_identifier;
-
-    foreach($source_parameters as $key => $value) {
-      if ($value['filename'] == basename($file)) {
-        $fields = $value['fields'];
-        $encoding = $value['encoding'];
-        $delimiter = isset($value['delimiter']) ? $value['delimiter'] : ",";
-      }
-    }    
-  }
-
   $data_source = new MongoDBDataSource($source_parameters, 'current');
   $collection = $data_source->db->$source_id;
   $cursor = $collection->find(['updated_at' => (int)$updated_at]);
 
+  // Go through all rows and count occurences of each value
+  $row_value_count_in_source = array();
   if(isset($field)) {
     $index = 1;
     foreach ($cursor as $id => $value) {
@@ -42,43 +31,15 @@
           !preg_match("/".$_GET['filter_value']."/i", $row[$filter])) {
         continue;
       }
-      if (isset($result[$value])) {
-        $result[$value] = $result[$value] + 1;
+      if (isset($row_value_count_in_source[$value])) {
+        $row_value_count_in_source[$value] += 1;
       } else {
-        $result[$value] = 1;
+        $row_value_count_in_source[$value] = 1;
       }
       $index++;
     }    
   }
-
-  // if (isset($_GET['field'])) {
-  //   $fh = popen("$iconv_path --from-code $encoding --to-code UTF-8//IGNORE//TRANSLIT $file", "r");
-  //   // $fh = fopen($file, "r");
-  //   $position = array_search($_GET['field'], $fields);
-  //   $filter_position = array_search($_GET['filter'], $fields);
-  //   if ($fh) {
-  //     $index = 1;
-  //     while ($line = fgets($fh)) {
-  //       $row = str_getcsv($line, $delimiter);
-  //       if (isset($row[$position])) {
-  //         $value = $row[$position];
-  //       } else {
-  //         $value = null;
-  //       }
-  //       if (isset($_GET['filter_value']) && isset($row[$filter_position]) && 
-  //           !preg_match("/".$_GET['filter_value']."/i", $row[$filter_position])) {
-  //         continue;
-  //       }
-  //       if (isset($result[$value])) {
-  //         $result[$value] = $result[$value] + 1;
-  //       } else {
-  //         $result[$value] = 1;
-  //       }
-  //       $index++;
-  //     }
-  //   }
-  // }
-
+  uksort($row_value_count_in_source, "strnatcmp");
 
   include('header.php');
 ?>
@@ -86,6 +47,44 @@
 <h1>
   "<?php echo $source_id ?>" (<?php echo $updated_at ? date("Y-m-d H:i:s", $updated_at) : "準備中" ?> バージョン) ファイルの分析
 </h1>
+<fieldset>
+  <legend>config/field_values.phpの分析</legend>
+  <p>
+    特殊な処理をしたいfieldについては、field_values.phpにフィールド値を列挙してある。その値が現在のCSVファイルとマッチしているかどうかを確認し、品質確認する必要がある。
+  </p>
+  <p>
+    「該当タグがない値」の中に、本当は選択できるようにしたい値があれば、field_values.phpを書き換えるか、もしくは元のCSVファイルを変更する。例えばCSVファイルの中で"マウス"と書いたり"ﾏｳｽ"と書いてしまっていたりしているのに、field_values.phpでは"マウス"のみを登録していると、「該当タグがない値」のところに"ﾏｳｽ"が出てしまう。<br>
+    「該当値がないタグ」はselect_tagなどに表示されないので、特に問題にはならないが、field_values.phpがわかりにくくなるので、もう使わないタグは外しておいたほうが良いだろう。
+  </p>
+  <table style="width: 90%">
+    <tr>
+      <th>フィールド</th>
+      <th>該当タグがない値</th>
+      <th>該当値がないタグ</th>
+    </tr>
+  <? 
+    $fields_to_analyse = array_intersect($fields, array_keys($field_settings));
+    foreach($fields_to_analyse as $field_to_analyse) {
+      $counts_for_field = $data_source->counts_for_field_of_source($field_to_analyse, $source_id);
+      ?>
+      <tr>
+        <th><?= $field_to_analyse ?></th>
+        <td><?= join(", ", $counts_for_field['uncaptured_values']) ?></td>
+        <td>
+          <?
+            $tags_in_settings = tags_for_field($field_to_analyse);
+            $values_in_result = array_keys(array_filter($counts_for_field['result'], function($a) {return $a != 0;}));
+            $unused_tags = array_diff($tags_in_settings, $values_in_result);
+          ?>
+          <?= join(", ", $unused_tags) ?>
+        </td>
+      </tr>
+      <?
+    }
+  ?>
+  </table>
+  <!-- counts_for_field_of_source -->
+</fieldset>
 <fieldset>
   <legend>フィールド値の分析</legend>
   <p>
@@ -125,7 +124,7 @@
     <tr>
       <td>
         <table>
-          <?php foreach($result as $key => $value): ?>
+          <?php foreach($row_value_count_in_source as $key => $value): ?>
             <tr>
               <td>
                 <?php echo $key ?>
@@ -141,8 +140,8 @@
         <strong>php array</strong>
         <pre style="border:solid 1px black;padding:5px;">
 [
-<?php foreach ($result as $key => $value): ?>
-  <?php echo "\"$key\", // count $value</br>" ?>
+<?php foreach ($row_value_count_in_source as $key => $value): ?>
+  <?php echo "\"$key\" => null, // count $value</br>" ?>
 <?php endforeach; ?>
 ]
         </pre>
