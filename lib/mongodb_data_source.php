@@ -829,9 +829,8 @@ class MongoDBDataSource {
 	    $row = $this->row($id);
       // We only process for the native fields in 
       // $row->fields(). ($rowspanable includes non-native fields)
-	    foreach($row->fields() as $field) {
-	    	if (!in_array($field, $rowspanable))
-	    		continue;
+      $fields_to_process = array_intersect($row->fields(), $rowspanable);
+	    foreach($fields_to_process as $field) {
 	      if ($previous_row &&
 	          $previous_row->get_raw($field) == $row->get_raw($field)) {
 	        // If this is the second row (the first time we need to set span)
