@@ -4,6 +4,9 @@
 //
 // This should mainly benefit coding of tedious HTML controls.
 
+//////////////////////////////////////
+// For Search
+//////////////////////////////////////
 function text_entry_control($parameter_name, $label_html) {
 ?>
   <div class="query_menu text_entry_control <?= $parameter_name ?>">
@@ -48,3 +51,15 @@ function checkbox_control($parameter_name, $value, $label_html, $data_source) {
   </div>
 <?
 }
+
+//////////////////////////////////
+// For Export
+/////////////////////////////////
+function export_checkbox_control($field_name, $checked_fields) {
+  $checked = in_array($field_name, $checked_fields); ?>
+  <div class="export_menu checkbox_control">
+    <label for="<?= $field_name ?>"><?= $field_name ?></label>
+    <input type="checkbox" name="export[]" value="<?= $field_name ?>" <?= $checked ? "checked" : "" ?>>
+  </div> <?
+}
+
