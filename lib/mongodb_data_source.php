@@ -182,6 +182,11 @@ class MongoDBDataSource {
 
   // Get all the values in the $field of the $source_id.
   // Return as an associated list with field values and counts.
+  //
+  // Will include values that we may not want to include in 
+  // a select_tag like the header titles.
+  //
+  // 
   public function all_values_in_field_of_source($field, $source_id) {
     if (!isset($this->all_values_in_field_of_source_cache[$source_id])) {
       $this->all_values_in_field_of_source_cache[$source_id] = array();
@@ -206,6 +211,10 @@ class MongoDBDataSource {
     }
 
     return $this->all_values_in_field_of_source_cache[$source_id][$field];
+  }
+
+  public function all_values_in_field_of_source_sorted($field, $source_id) {
+    return $this->sort_using_tags_for_field($this->counts_for_field_of_source($field, $source_id)['result'], $field);
   }
 
   // This returns the counts in the whole source
@@ -755,8 +764,10 @@ class MongoDBDataSource {
     }
     // Count facets
     foreach($fields as $field) {
+      // Initial aggregation of data using
+      // full string matching.
       foreach ($this->data as $row) {
-        $value = $row->get($field);
+        $value = $row->get_raw($field);
         if (!$value)
           continue;
 
@@ -766,6 +777,8 @@ class MongoDBDataSource {
         $result[$field][$value]++;
       }
 
+      // Secondary aggregation of data using
+      // settings in field_values.php
       if (settings_for_field($field)) {
         $result[$field] = $this->aggregate_counts_using_settings($result[$field], settings_for_field($field))['result'];
       }
@@ -782,7 +795,7 @@ class MongoDBDataSource {
 
 
   // Sort facets.
-  // If a field has been set in $this->field_values(),
+  // If a field has been set in field_values.php,
   // then that order will be used. Otherwise
   // we will not re-sort (hence facets will be returned in order of the results)
   public function sort_facets() {
@@ -790,18 +803,24 @@ class MongoDBDataSource {
     $fields = $this->facet_fields;
     foreach ($fields as $field) {
       if (tags_for_field($field)) {
-        $results_for_field = $result[$field];
-        uksort($results_for_field, function($a, $b) use ($field) {
-          return cmp_in_array($a, $b, tags_for_field($field));
-        });
-        $result[$field] = $results_for_field;
+        $result[$field] = $this->sort_using_tags_for_field($result[$field], $field);
       }
     }
     $this->facets = $result;
     return $this->facets;
   }
 
-
+  // Sort a value => counts associated list using
+  // the settings in field_values.php
+  public function sort_using_tags_for_field($value_counts, $field) {
+    $tags_for_field = tags_for_field($field);
+    if ($tags_for_field) {
+      uksort($value_counts, function($a, $b) use ($tags_for_field) {
+        return cmp_in_array($a, $b, $tags_for_field);
+      });
+    }
+    return $value_counts;
+  }
 
   //////// Functions for table display /////////
 

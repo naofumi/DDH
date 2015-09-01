@@ -314,4 +314,8 @@ abstract class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
   public function all_values_in_field($field) {
     return $this->all_values_in_field_of_source($field, $this->query_target);
   }
+
+  public function all_values_in_field_sorted($field) {
+    return $this->all_values_in_field_of_source_sorted($field, $this->query_target);
+  }
 }
