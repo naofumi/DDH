@@ -236,9 +236,11 @@ class MongoDBDataSource {
   public function counts_for_field_of_source($field, $source_id) {
     $all_values = $this->all_values_in_field_of_source($field, $source_id);
     if (!settings_for_field($field)) {
-      die("No settings for $field in field_values.php");
+      return ["result" => $all_values, "uncaptured_values" => array()];
+      // die("No settings for $field in field_values.php");
+    } else {
+      return $this->aggregate_counts_using_settings($all_values, settings_for_field($field));      
     }
-    return $this->aggregate_counts_using_settings($all_values, settings_for_field($field));
   }
 
   protected function aggregate_counts_using_settings($value_counts, $field_settings) {

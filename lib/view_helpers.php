@@ -84,6 +84,7 @@ function does_match_value($value, $matcher) {
 // $options must have `ddhq:` ranged values.
 // $facets must have numeric keys.
 function select_tag_with_ranged_facet($name, $options = array(), $facets = array(), $attributes = array(), $default = null) {
+  die('select_tag_with_ranged_facet is not longer supported. You should be able to use select_tag_with_facet instead.');
   $new_options = array();
   foreach ($options as $range => $tag) {
     $ddhq_range = preg_replace("/^ddhq:/", "", $range);
