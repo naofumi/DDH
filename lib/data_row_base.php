@@ -1,6 +1,49 @@
 <?php
-
-class DataRowBase {
+/////////////////////////////////////
+//
+// class DataRowBase
+//
+// This is an abstract class to represent a row of data in
+// a DataSource class. We must subclass this class to 
+// define a DataRow class in `config/data_row.php`. 
+//
+// In the subclass DataRow, we can define how each field
+// is displayed.
+//
+// In the views, we access the data in each row by calling
+// #get([symbol]). #get() will first check to see if there is
+// a method that is the same as `symbol`. If it exists, then
+// it will return the return value of that method. If a
+// method does not exist, then it will return the value _as is_
+// from the MongoDB row. This means that when we want to 
+// customise the display of a certain row, we can simply 
+// implement a method that returns the HTML for that row in
+// the DataRow class.
+//
+// In the DataRowBase class, in addition to the #set() and #get()
+// methods, we implement the following methods for convinience.
+//
+// **`is_campaign()`**
+// This looks up the `starts_at`, `ends_at` and `campaign_price` fields
+// and determines if the product is current undergoing a campaign.
+// This is used to change the display of the price when a campaign
+// is running.
+//
+// **`td() th() table_cell()`**
+// These are used to generate <td> and <th> tags for HTML table
+// display. The important feature of these methods is that
+// they can generate `rowspan` attributes for an easier to read
+// table format.
+//
+// This works in coordination with MongoDBDataSource#add_rowspan()
+// and this method has to be called on the data_source for
+// the rowspan feature to work.
+//
+//
+// 
+//
+/////////////////////////////////////
+abstract class DataRowBase {
 	protected $row;
 
 	public function __construct() {
@@ -20,6 +63,14 @@ class DataRowBase {
 			} else {
 				return null;
 			}
+		}
+	}
+
+	public function get_raw($field) {
+		if (isset($this->row[$field])) {
+			return $this->row[$field];
+		} else {
+			return null;
 		}
 	}
 
@@ -48,34 +99,21 @@ class DataRowBase {
 	// set using the $attributes argument.
 	//
 	// If the $field is not a native field in the $source_parameters,
-	// then it won't have a $row[$field."_rowspan"] value. In these
-	// cases, provide a native field in the $field_for_rowspan argument. This field will
-	// be used to get the $row[$field."_rowspan"] value.
-	function td($field, $attributes = array(), $field_for_rowspan = null) {
-		if (!$field_for_rowspan) {
-			$field_for_rowspan = $field;
-		}
-	  $result = "";
-	  $attribute_string = "";
-	  foreach($attributes as $name => $value) {
-	    $attribute_string = $attribute_string." $name=\"$value\"";
-	  }
-	  if ($this->get($field_for_rowspan."_rowspan") && $this->get($field_for_rowspan."_rowspan") > 1) {
-	    $attribute_string = $attribute_string." rowspan=".$this->get($field_for_rowspan."_rowspan");
-	  }
-	  if (!$this->get($field_for_rowspan."_rowspan") || $this->get($field_for_rowspan."_rowspan") != -1) {
-	    $result = "<td$attribute_string>";
-	    $result = $result.$this->get($field);
-	    $result = $result."</td>\n";      
-	  }
-	  return $result;
+	// then it won't have a $row[$field."_rowspan"] value since
+	// `MongoDBDataSource#add_rowspans()` does not take in consideration
+	// the methods added in DataRow() and DataRowBase().
+	// In these cases, provide a native field in the 
+	// $field_for_rowspan argument. This field will
+	// be used instead to obtain the $row[$field."_rowspan"] value.
+	public function td($field, $attributes = array(), $field_for_rowspan = null) {
+		return $this->table_cell('td', $field, $attributes, $field_for_rowspan);
 	}
 
-	function th($field, $attributes = array(), $field_for_rowspan = null) {
+	public function th($field, $attributes = array(), $field_for_rowspan = null) {
 		return $this->table_cell('th', $field, $attributes, $field_for_rowspan);
 	}
 
-	function table_cell($tag_name, $field, $attributes = array(), $field_for_rowspan = null) {
+	public function table_cell($tag_name, $field, $attributes = array(), $field_for_rowspan = null) {
 		if (!$field_for_rowspan) {
 			$field_for_rowspan = $field;
 		}

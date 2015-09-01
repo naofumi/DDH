@@ -818,18 +818,22 @@ class MongoDBDataSource {
 	// Only the fields which are included in "rowspanable" in the
 	// source_parameters will be rowspaned.
 	public function add_rowspans() {
+    $start_time = microtime(TRUE);
 	  $previous_row = array();
 	  $previous_id = null;
 	  // Hash that stores the id of the span start row.
 	  // $span_start_id[field_name] contains the row id.
 	  $span_start_id = array(); 
+    $rowspanable = $this->rowspanable();
 	  foreach($this->ids() as $id) {
 	    $row = $this->row($id);
+      // We only process for the native fields in 
+      // $row->fields(). ($rowspanable includes non-native fields)
 	    foreach($row->fields() as $field) {
-	    	if (!in_array($field, $this->rowspanable()))
+	    	if (!in_array($field, $rowspanable))
 	    		continue;
 	      if ($previous_row &&
-	          $previous_row->get($field) == $row->get($field)) {
+	          $previous_row->get_raw($field) == $row->get_raw($field)) {
 	        // If this is the second row (the first time we need to set span)
 	        if (!isset($span_start_id[$field]) || !$span_start_id[$field]){
 	          $span_start_id[$field] = $previous_id;
@@ -846,6 +850,8 @@ class MongoDBDataSource {
 	    $previous_row = $row;
 	    $previous_id = $id;
 	  }
+    $end_time = microtime(TRUE);
+    error_log("BENCHMARK add_rowspans(): ".($end_time - $start_time));
 	  return $this;
 	}
 

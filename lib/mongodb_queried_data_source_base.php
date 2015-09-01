@@ -60,7 +60,7 @@ require_once(dirname(__FILE__).'/mongodb_data_source.php');
 //    to supply the sorting callback function. We can now also
 //    assign a lambda through the `set_sort_callback()` function.
 //  $data_source->set_sort_callback(function() {[callback function code]})
-class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
+abstract class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
   protected $query;
   protected $query_target;
   protected $partial_match_field_names;
