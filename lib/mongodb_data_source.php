@@ -300,6 +300,13 @@ class MongoDBDataSource {
   }
 
   // See #set_sort_callback() for a description of how this works.
+  //
+  // Note that for preformance (~20% gain) we use DataRow#get_raw() 
+  // when we set sort conditions using a declarative array.
+  // This means that we can only use native-fields.
+  //
+  // If this isn't satisfactory, then use either the anonymous
+  // function approach or the subclass approach.
   protected function sort_data() {
     $sort_start_time = microtime(TRUE);
     if (isset($this->sort_callback_lambda)) {
@@ -308,10 +315,10 @@ class MongoDBDataSource {
         $callback_func = function($a, $b) use ($sort_specification) {
           foreach($sort_specification as $sort_field => $sort_type) {
             if ($sort_type == 'field_settings') {
-              $cmp = cmp_in_array($a->get($sort_field), $b->get($sort_field), tags_for_field($sort_field));
+              $cmp = cmp_in_array($a->get_raw($sort_field), $b->get_raw($sort_field), tags_for_field($sort_field));
               if ($cmp !== 0) {return $cmp;}
             } else if (is_callable(explode(" ", $sort_type)[0])) {
-              $cmp = $sort_type($a->get($sort_field), $b->get($sort_field));
+              $cmp = $sort_type($a->get_raw($sort_field), $b->get_raw($sort_field));
               if ($cmp !== 0) {return $cmp;}
             } else {
               throw new Exception ("Unavailable sort_type '$sort_type'");
