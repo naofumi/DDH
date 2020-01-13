@@ -10,7 +10,6 @@ DDH provides multiple ways to put the information onto the web pages.
 2. Embedding on the server
 3. Generating new pages (we recommend using reverse proxies to make them look as if they are coming from the supplier's domain)
 
-
 ## Notes
 
 Some quick notes that should be inserted into the proper documentation afterwards.
@@ -26,6 +25,17 @@ $suppress_reverse_proxy_requirement = true;
 This is already done for you if you require basic authentication with `basic_auth()`.
 
 A proper reverse proxy would probably work so we should be able to access admin pages via reverse proxy on an Apache setup. However, this would be a problem on IIS setups. Safer to just allow direct access.
+
+## Server Setup
+
+The current DDH code has been tested on the following.
+1. PHP: 5.5.9
+2. OS: Ubuntu 14.04 Trusty
+3. MongoDB: 3.4.23
+
+## Documentation
+
+Documenation is available on this file and also in the Wiki pages on BitBucket. Additional documentation may be available in the DDH implementation folder.
 
 ## 概要
 
