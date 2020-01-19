@@ -62,7 +62,7 @@
       <th>該当タグがない値</th>
       <th>該当値がないタグ</th>
     </tr>
-  <? 
+  <?php
     $fields_to_analyse = array_intersect($fields, array_keys($field_settings));
     foreach($fields_to_analyse as $field_to_analyse) {
       $counts_for_field = $data_source->counts_for_field_of_source($field_to_analyse, $source_id);
@@ -71,7 +71,7 @@
         <th><?= $field_to_analyse ?></th>
         <td><?= join(", ", $counts_for_field['uncaptured_values']) ?></td>
         <td>
-          <?
+          <?php
             $tags_in_settings = tags_for_field($field_to_analyse);
             $values_in_result = array_keys(array_filter($counts_for_field['result'], function($a) {return $a != 0;}));
             $unused_tags = array_diff($tags_in_settings, $values_in_result);
@@ -79,7 +79,7 @@
           <?= join(", ", $unused_tags) ?>
         </td>
       </tr>
-      <?
+      <?php
     }
   ?>
   </table>

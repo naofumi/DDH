@@ -1,4 +1,4 @@
-<?
+<?php
 // High level view helpers that aim to
 // provide default control elements.
 //
@@ -13,14 +13,14 @@ function text_entry_control($parameter_name, $label_html) {
     <label for="<?= $parameter_name ?>"><?= $label_html ?></label>
     <?php echo text_field($parameter_name) ?>
   </div>
-<?
+<?php
 }
 
 function select_menu_control($parameter_name, $label_html, $data_source, $default = null, $sort_callback = false) {
 ?>
   <div class="query_menu select_menu_control <?= $parameter_name ?>">
     <label for="<?= $parameter_name ?>"><?= $label_html ?></label>
-    <? 
+    <?php 
       if ($data_source->total_rows()){
         $facets = $data_source->facets[$parameter_name];
       } else {
@@ -32,7 +32,7 @@ function select_menu_control($parameter_name, $label_html, $data_source, $defaul
       select_tag_with_facet($parameter_name, $facets, null, $default);
     ?>
   </div>
-<?
+<?php
 }
 
 function checkbox_control($parameter_name, $value, $label_html, $data_source) {
@@ -43,13 +43,13 @@ function checkbox_control($parameter_name, $value, $label_html, $data_source) {
   <div class="query_menu checkbox_control <?= $parameter_name ?>">
     <label for="<?= $parameter_name ?>"><?= $label_html ?></label>
     <input type="checkbox" name="<?= $parameter_name ?>" value="<?= $value ?>" <?= $checked ? "checked" : "" ?>>
-    <? if ($data_source->total_rows()): ?>
+    <?php if ($data_source->total_rows()): ?>
       (<?= isset($facets[$parameter_name][$value]) ? 
               $facets[$parameter_name][$value] : 
               0; ?>)
-    <? endif; ?>
+    <?php endif; ?>
   </div>
-<?
+<?php
 }
 
 //////////////////////////////////
@@ -60,6 +60,6 @@ function export_checkbox_control($field_name, $checked_fields) {
   <div class="export_menu checkbox_control">
     <label for="<?= $field_name ?>"><?= $field_name ?></label>
     <input type="checkbox" name="export[]" value="<?= $field_name ?>" <?= $checked ? "checked" : "" ?>>
-  </div> <?
+  </div> <?php
 }
 

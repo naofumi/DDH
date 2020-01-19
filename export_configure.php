@@ -1,4 +1,4 @@
-<?
+<?php
 $suppress_reverse_proxy_requirement = true;
 require(dirname(__FILE__).'/jsonp.php');
 
@@ -20,7 +20,7 @@ include('header.php');
 <h1>データのエキスポート（ファイル: '<?= $source_parameters[$source_id]['filename'] ?>'）</h1>
 
 <form method="get" action="export_preview.php">
-  <? 
+  <?php
     foreach($all_field_in_source as $field_name) {
       export_checkbox_control($field_name, $fields_to_export); 
     }
@@ -31,6 +31,6 @@ include('header.php');
 
 </form>
 
-<?
+<?php
 include('footer.php');
 ?>
