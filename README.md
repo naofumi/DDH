@@ -37,6 +37,10 @@ The current DDH code has been tested on the following.
 
 Documenation is available on this file and also in the Wiki pages on BitBucket. Additional documentation may be available in the DDH implementation folder.
 
+## Admin 
+
+To access the administration screen for the MongoDB version, point to `ddh/snapshots.php`.
+
 ## 概要
 
 Castle104 JSONPはCSVファイルの情報をJSONPに類似の方法で、任意のウェブサイトに埋め込む仕組みである。
