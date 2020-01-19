@@ -176,6 +176,8 @@ class MongoDBDataSource {
   // TODO: MongoDB should allow us to use these more effectively and more easily.
   // We will look into this. Look at #28 of select_options.php
   // Also look into http://docs.mongodb.org/master/core/aggregation-pipeline/
+  //
+  // TODO: See if we can remove this now.
   public function field_values($field){
     return null;
   }
