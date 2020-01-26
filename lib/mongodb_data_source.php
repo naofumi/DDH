@@ -158,7 +158,7 @@ class MongoDBDataSource {
     // $this->snapshots->createIndex(array('published_at' => 1), array('unique' => true));
     $this->current = $this->db->current;
 
-    $this->staging_directory = dirname(__FILE__).'/../data/preview/';
+    $this->staging_directory = dirname(__FILE__).'/../../data/preview/';
   }
 
   public function set_ids($ids) {
@@ -546,6 +546,7 @@ class MongoDBDataSource {
 
   // This searches the contents of the staging_directory
   // and uploads any new files using $this->upload_source($source_id).
+  // Then it deletes the files in the staging_directory
   public function load_new_sources() {
     $message = "";
     foreach ($this->new_sources() as $source_id) {
