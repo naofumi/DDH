@@ -183,6 +183,9 @@
 </fieldset>
 <fieldset style="width:35%;float:right;">
   <legend>ファイルをアップロード</legend>
+  <div style="font-size:smaller">
+    ファイルサイズの上限はupload_max_filesize:<?= ini_get('upload_max_filesize') ?>とpost_max_size:<?= ini_get('post_max_size') ?>のうちの小さい方です。php.iniで設定します。
+  </div>
   <!-- The data encoding type, enctype, MUST be specified as below -->
   <form enctype="multipart/form-data" action="" method="POST">
     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION["csrf_token"]?>">
