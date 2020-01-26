@@ -170,7 +170,8 @@
   <legend>プレビューモード</legend>
   <?php if (is_preview()): ?>
     現在プレビューモードです。<br>
-    "<?php echo preview_version_name() ?>"のバージョンが表示されます。
+    "<?php echo preview_version_name() ?>"のバージョンが表示されます。<br>
+    プレビューは現セッションでしか表示されず、他ユーザには表示されません。
     <form action="" method="POST">
       <input type="hidden" name="csrf_token" value="<?php echo $_SESSION["csrf_token"]?>">
       <input type="hidden" name="preview" value="" />
