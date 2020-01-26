@@ -114,7 +114,6 @@ class MongoDBDataSource {
   // TODO: accessed from mongodb_preview.php and select_options.php. Want to think about encapsulation
   public $db; 
   protected $snapshots;
-  protected $staging_directory;
   protected $source_parameters;
   protected $snapshot_version;
   protected $snapshot;
@@ -157,8 +156,6 @@ class MongoDBDataSource {
     $this->snapshots = $this->db->snapshots;
     // $this->snapshots->createIndex(array('published_at' => 1), array('unique' => true));
     $this->current = $this->db->current;
-
-    $this->staging_directory = dirname(__FILE__).'/../../data/preview/';
   }
 
   public function set_ids($ids) {
@@ -239,7 +236,6 @@ class MongoDBDataSource {
     $all_values = $this->all_values_in_field_of_source($field, $source_id);
     if (!settings_for_field($field)) {
       return ["result" => $all_values, "uncaptured_values" => array()];
-      // die("No settings for $field in field_values.php");
     } else {
       return $this->aggregate_counts_using_settings($all_values, settings_for_field($field));      
     }
@@ -497,10 +493,6 @@ class MongoDBDataSource {
     $this->db->drop();
   }
 
-  public function staging_directory() {
-    return $this->staging_directory;
-  }
-
   // Convert the row (an array of values) that we get out of CSV parsing
   // functions into a associated list with the field names as keys.
   //
@@ -510,22 +502,6 @@ class MongoDBDataSource {
     for ($i = 0; $i < count($field_names); $i++) {
       $value = isset($row[$i]) ? $row[$i] : null;
       $result[$field_names[$i]] = $this->trim($value);
-    }
-    return $result;
-  }
-
-  // This returns the new sources files (as the corresponding source_ids) 
-  // in the staging_directory.
-  // This only return sources that are registered in config.php.
-  //
-  // We use this to get a list of sources to upload.
-  protected function new_sources() {
-    $source_files = $this->source_files();
-    $result = array();
-    foreach(scandir($this->staging_directory) as $file) {
-      if (in_array($file, array_keys($source_files))) {
-        array_push($result, $source_files[$file]);
-      }
     }
     return $result;
   }
@@ -544,16 +520,15 @@ class MongoDBDataSource {
     return $result;
   }
 
-  // This searches the contents of the staging_directory
-  // and uploads any new files using $this->upload_source($source_id).
-  // Then it deletes the files in the staging_directory
-  public function load_new_sources() {
+  // This function looks at $original_filename, finds the $source_id
+  // that corresponds to the $original_filename from the $source_parameters
+  // in data_sources.php, and uploads the contents of the file in $source_path
+  // to MongoDB under $source_id.
+  public function load_source($original_filename, $source_path) {
+    $source_id = $this->source_files()[$original_filename];
     $message = "";
-    foreach ($this->new_sources() as $source_id) {
-      $message .= $this->upload_source($source_id);
-    }
-    $this->delete_all_from_staging_directory();
-    return $message;
+    $message .= $this->upload_source($source_id, $source_path);
+    return $message;    
   }
 
   // The preview snapshot is a special snapshot in
@@ -590,11 +565,6 @@ class MongoDBDataSource {
     }
   }
 
-  public function delete_all_from_staging_directory() {
-    $staging_directory = $this->staging_directory();
-    array_map('unlink', glob($this->staging_directory()."/*"));
-  }
-
   // Clean up non-numeric characters from a string and
   // coerce the result into a float.
   //
@@ -606,7 +576,7 @@ class MongoDBDataSource {
     return (float)$clean_string;
   }
 
-  // This uploads the $source_id that was found in the staging_directory.
+  // This uploads into MongoDB at $source_id from the file in $source_path.
   // The preview snapshot will be automatically updated to include a link
   // to the newly updated source.
   //
@@ -619,13 +589,13 @@ class MongoDBDataSource {
   // However, we will not enforce uniqueness in the database because then batch uploads
   // will become difficult to manage in case of duplications in the original data.
   // We just hope that it will work out.
-  protected function upload_source($source_id) {
+  protected function upload_source($source_id, $source_path) {
     $benchstart = microtime(true);
     $message = "";
 
     if (array_search($source_id, $this->sources()) !== false) {
       $source_config = $this->source_parameters[$source_id];
-      $source_path = $this->staging_directory.$source_config['filename'];
+      $source_path = $source_path;
       $encoding = $source_config['encoding'];
       $delimiter = isset($source_config['delimiter']) ? $source_config['delimiter'] : ",";
       $updated_at = filemtime($source_path);

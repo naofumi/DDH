@@ -10,30 +10,18 @@
 
   // File was uploaded
   if ($_FILES) {
-    $uploaddir = $data_source->staging_directory();
-    if (!file_exists($uploaddir) || !is_writable($uploaddir))
-      die("$uploaddir must be available and writable by Apache.");
-
-    $uploadfile = $uploaddir.basename($_FILES['userfile']['name']);
-    $extension = strtolower(pathinfo($uploadfile, PATHINFO_EXTENSION));
+    $extension = strtolower(pathinfo($_FILES['userfile']['name'], PATHINFO_EXTENSION));
     if (($extension != 'csv') && ($extension != 'txt')) {
       echo '<div class="notice">';
       echo "ERROR: このファイル\"$uploadfile\"は CSV でも TXT(タブ区切りテキスト) でもないようです.";
       echo "</div>";
-    } else if (move_uploaded_file($_FILES['userfile']['tmp_name'], $uploadfile)) {
+    } else {
       $flash_message = "";
       $flash_message .= "\"".$_FILES['userfile']['name'].
-                        "\" (".$_FILES['userfile']['size']." bytes) をサーバにアップロードしました"."<br />";
-      $flash_message .= $data_source->load_new_sources();
+                        "\" (".$_FILES['userfile']['size']." bytes) をデータベースにアップロードしました"."<br />";
+      $flash_message .= $data_source->load_source($_FILES['userfile']['name'], $_FILES['userfile']['tmp_name']);
       set_flash($flash_message);
       redirect_to();
-    } else {
-      echo '<div class="notice">';
-      echo "ERROR: ".$_FILES['userfile']['error']."\n";
-      echo "<pre>";
-      print_r($_FILES);
-      echo "</pre>";
-      echo "</div>";
     }
   } else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Publish button was pressed.
