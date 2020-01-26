@@ -610,11 +610,15 @@ class MongoDBDataSource {
   // The preview snapshot will be automatically updated to include a link
   // to the newly updated source.
   //
-  // The `updated_at` and `id` combination must be unique. Hence
+  // The `updated_at` and `id` combination should be unique. Hence
   // if a company does not use a unique catalog_number (different SKUs
   // share the same catalog_number), then we can't use the catalog_number
   // as the `id`. In that case, modify the original excel file to
-  // contain a unique id and use that.
+  // contain a unique id (normally concat the catalog_number with size or similar)
+  // and use that.
+  // However, we will not enforce uniqueness in the database because then batch uploads
+  // will become difficult to manage in case of duplications in the original data.
+  // We just hope that it will work out.
   protected function upload_source($source_id) {
     $benchstart = microtime(true);
     $message = "";
@@ -641,7 +645,12 @@ class MongoDBDataSource {
                             array();
 
         $collection = $this->db->$source_id;
-        $collection->ensureIndex(array('updated_at' => 1, 'id' => 1), array('unique' => true));
+        // Although we ideally want the updated_at and id combo to be a unique index, 
+        // enforcing that would cause errors that would block batch uploads
+        // in case there were actually a duplication.
+        // Therefore, we just don't enforce this and hope things work out.
+        // $collection->ensureIndex(array('updated_at' => 1, 'id' => 1), array('unique' => true));
+        $collection->ensureIndex(array('updated_at' => 1, 'id' => 1));
         $collection->ensureIndex(array('row_num' => 1));
 
         $this->each_line_from_file($source_path, $encoding, function($line)
