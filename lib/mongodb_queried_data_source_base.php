@@ -127,6 +127,12 @@ abstract class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
     return $result;
   }
 
+  // Public accessor function to provide access to the
+  // cleaned up query.
+  public function query() {
+    return $this->query;
+  }
+
   // Takes an array of tokens and generates
   // a regular expression string that will
   // to an AND match.
