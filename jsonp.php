@@ -6,6 +6,21 @@ require_once(dirname(__FILE__).'/lib/mongodb_data_source.php');
 require_once(dirname(__FILE__).'/../config.php');
 
 ///////////////////////////////////////////////
+//
+// Validate configuration
+//
+///////////////////////////////////////////////
+// Test $iconv_path
+if (exec("which iconv") != $iconv_path) {
+  die("iconv was not found in ".$iconv_path);
+}
+
+// Test gnugrep_path
+if (exec("which grep") != $gnugrep_path) {
+  die("grep was not found in ".$gnugrep_path);
+}
+
+///////////////////////////////////////////////
 // Restrict access to proxies
 //
 // All PHP files which require jsonp.php will
