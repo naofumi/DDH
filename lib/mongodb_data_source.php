@@ -126,6 +126,7 @@ class MongoDBDataSource {
   protected $all_values_in_field_of_source_cache = array();
 
   protected $facets;
+  protected $sorted;
 
 
   ///// Reflection methods ////
@@ -285,17 +286,13 @@ class MongoDBDataSource {
   // The $this->data format is keys are the $ids, and the values are DataRow objects.
   //
   // The $this->ids are searched in all sources and data is joined together.
-  // If $this->sort_callback_lambda is set via `set_sort_callback()`
-  // or if $this->sort_callback() exists, 
-  // then it is called to sort the data.
-  // sort_callback($a, $b) should return an integer indicating sort order.
+  // Sorting is not performed yet. It is only run when rows are actually retrieved (lazily).
   protected function retrieve_data() {
     if (!isset($this->data)){
       $this->data = array();
       foreach($this->sources() as $source_id) {
         $this->update_from_source_id($source_id);
       }
-      $this->sort_data();
     }
   }
 
@@ -308,6 +305,9 @@ class MongoDBDataSource {
   // If this isn't satisfactory, then use either the anonymous
   // function approach or the subclass approach.
   protected function sort_data() {
+    if ($this->sorted) {
+      return;
+    }
     $sort_start_time = microtime(TRUE);
     if (isset($this->sort_callback_lambda)) {
       if (is_array($this->sort_callback_lambda)) {
@@ -333,6 +333,7 @@ class MongoDBDataSource {
       // If a subclass has implemented a `sort_callback()` method.
       uasort($this->data, array($this, "sort_callback"));
     }
+    $this->sorted = true;
     $end_time = microtime(TRUE);
     error_log("BENCHTIME sort_callback ".($end_time - $sort_start_time));
   }
@@ -390,6 +391,9 @@ class MongoDBDataSource {
   // Get all rows in the data.
   public function rows(){
     $this->retrieve_data();
+    $this->sort_data();
+    $this->add_rowspans();
+
     return array_values($this->data);
   }
 

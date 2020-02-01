@@ -10,7 +10,6 @@
   $bench_start = microtime(true);
   $bench_time = microtime(true) - $bench_start;
 
-  $data_source->add_rowspans();
   odd_even_reset();
 ?>
 <div class="price clearfix">

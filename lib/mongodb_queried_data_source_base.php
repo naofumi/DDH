@@ -229,8 +229,6 @@ abstract class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
       }
       $end_time = microtime(TRUE);
       error_log("BENCHTIME update_from_source_id(join allother data sources): ".($end_time - $join_other_start_time));
-
-      $this->sort_data();
     }
   }
 
