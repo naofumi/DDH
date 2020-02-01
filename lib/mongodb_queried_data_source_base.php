@@ -266,8 +266,9 @@ abstract class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
   // We generate the query parameters for the MongoDB query
   // send the request to MongoDB and iterate through the results.
   protected function each_assoc_list_for_query($source_id, $callback){
-    if (!$this->query)
+    if (!$this->query) {
       return array();
+    }
     $result = array();
 
     $snapshot = $this->snapshot();
