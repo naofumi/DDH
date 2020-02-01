@@ -133,6 +133,12 @@ abstract class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
     return $this->query;
   }
 
+  // Public accessor function to check if the query (after clean up)
+  // is empty
+  public function is_query_empty() {
+    return (count($this->query()) == 0);
+  }
+
   // Takes an array of tokens and generates
   // a regular expression string that will
   // to an AND match.
