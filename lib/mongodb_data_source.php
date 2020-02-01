@@ -125,6 +125,8 @@ class MongoDBDataSource {
   protected $sort_callback_lambda;
   protected $all_values_in_field_of_source_cache = array();
 
+  protected $facets;
+
 
   ///// Reflection methods ////
   // Methods that tell us about the database state
@@ -709,19 +711,27 @@ class MongoDBDataSource {
   }
 
   // This returns the count of values for each $field in $fields.
+  // This is the main function for retrieving facets.
   //
-  // The returned value is
+  // If $parameter_name is not set, then the returned value is
   // array('field_name_1' => array('value_1_1' => [count for value_1_1 in field_name_1],
   //                               'value_1_2' => [count for value_1_2 in field_name_1]...),
   //       'field_name_2' => array('value_2_1' => [count for value_2_1 in field_name_2],
   //                               'value_2_2' => [count for value_2_2 in field_name_2]...))
   //
+  // If $parameter_name is set, then the returned value is
+  // the facet information for the corresponding field_name only.
+  //
   // Since it used $this->data as the data source, the
   // facets are sorted in the same order as they would be 
   // displayed.
-  public function facets() {
+  public function facets($parameter_name = null) {
   	if (isset($this->facets)) {
-  		return $this->facets;
+      if (is_null($parameter_name)) {
+        return $this->facets;
+      } else {
+        return $this->facets[$parameter_name];
+      }
   	} else {
       if ($this->maximum_results_was_reached()) {
         // If $this->maximum_results_was_reached(),
@@ -729,18 +739,19 @@ class MongoDBDataSource {
         return array();
       } else {
         $this->retrieve_facets();
-        return $this->facets;     
+        return $this->facets($parameter_name);     
       }
   	}
   }
 
-  // Only show facets if we have rows to display and
+  // We should only show facets if we have rows to display and
   // we have not terminated due to reaching the maximum limit.
+  // `should_show_facets()` tests if this is true or not.
   public function should_show_facets() {
     return $this->total_rows() && !$this->maximum_results_was_reached();
   }
 
-  // Get the raw facet data. Not sorted or cached.
+  // Get the raw facet data and store in the $facets attribute. Not sorted or cached.
   // Takes less than 30ms on reactivity:human, so it's OK to do the loops in PHP
   public function retrieve_facets() {
     $this->retrieve_data();

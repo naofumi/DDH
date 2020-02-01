@@ -21,11 +21,7 @@ function select_menu_control($parameter_name, $label_html, $data_source, $defaul
   <div class="query_menu select_menu_control <?= $parameter_name ?>">
     <label for="<?= $parameter_name ?>"><?= $label_html ?></label>
     <?php 
-      if ($data_source->total_rows()){
-        $facets = $data_source->facets[$parameter_name];
-      } else {
-        $facets = $data_source->all_values_in_field_sorted($parameter_name);
-      }
+      $facets = $data_source->facets($parameter_name);
       if ($sort_callback !== false) {
         uksort($facets, $sort_callback);
       }
@@ -43,11 +39,9 @@ function checkbox_control($parameter_name, $value, $label_html, $data_source) {
   <div class="query_menu checkbox_control <?= $parameter_name ?>">
     <label for="<?= $parameter_name ?>"><?= $label_html ?></label>
     <input type="checkbox" name="<?= $parameter_name ?>" value="<?= $value ?>" <?= $checked ? "checked" : "" ?>>
-    <?php if ($data_source->total_rows()): ?>
       (<?= isset($facets[$parameter_name][$value]) ? 
               $facets[$parameter_name][$value] : 
               0; ?>)
-    <?php endif; ?>
   </div>
 <?php
 }
