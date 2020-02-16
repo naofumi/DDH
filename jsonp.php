@@ -168,9 +168,7 @@ function setup_cache(){
 	}
 }
 
-// Cache key generated based on the last update file
-// in the current directory or preview directory, based
-// on is_preview().
+// Cache key generated based on the last snapshot.
 function cache_key($data_source){
 	return $_SERVER["REQUEST_URI"]."-".$data_source->last_updated_at();
 }
@@ -255,6 +253,7 @@ function cache_start($data_source) {
 	if (isset($_GET['no_cache']))
 		return;
 
+  // Serve from cache if available
 	if ($cache = cache_obj()->get(cache_key($data_source))) {
     error_log("Served from cache.");
 	  echo $cache;
@@ -263,6 +262,7 @@ function cache_start($data_source) {
     error_log("Total time $bench_time secs.");
 	  exit;
 	}	
+  // Else continue and collect contents to buffer
   ob_start();
 }
 
@@ -272,6 +272,8 @@ function cache_end() {
     return;
   }
   global $bench_start;
+  // Get the contents from the buffer and save in cache,
+  // and then echo the results.
   $output = ob_get_contents();
   ob_end_clean();
 	cache_obj()->save($output);	
@@ -282,43 +284,44 @@ function cache_end() {
 
 //////////////////////////////////////////////////////////
 // Functions to change publish status
+// No longer used. Prepare to delete.
 /////////////////////////////////////////////////////////
-function publish_preview_files(){
-	global $current_directory;
-	global $preview_directory;
-	global $previous_directory;
-	global $source_parameters;
-  // 'cp -p' preserves timestamps
-	system('cp -p '.$current_directory.'* '.$previous_directory);
-	foreach($source_parameters as $key => $value) {
-		$path = $preview_directory.$value['filename'];
-		$destination = $current_directory.$value['filename'];
-		if (file_exists($path)) {
-  		rename($path, $destination);
-		}
-		// If file exists in $path, then move it to
-		// $destination. (removing it from "preview")
-	}
-}
+// function publish_preview_files(){
+// 	global $current_directory;
+// 	global $preview_directory;
+// 	global $previous_directory;
+// 	global $source_parameters;
+//   // 'cp -p' preserves timestamps
+// 	system('cp -p '.$current_directory.'* '.$previous_directory);
+// 	foreach($source_parameters as $key => $value) {
+// 		$path = $preview_directory.$value['filename'];
+// 		$destination = $current_directory.$value['filename'];
+// 		if (file_exists($path)) {
+//   		rename($path, $destination);
+// 		}
+// 		// If file exists in $path, then move it to
+// 		// $destination. (removing it from "preview")
+// 	}
+// }
 
-function rollback_files(){
-	// CP all in "current" to "preview" with overwrite.
-	// MV all in "previous" to "current".
-	global $current_directory;
-	global $preview_directory;
-	global $previous_directory;
-	system('cp -p '.$current_directory.'* '.$preview_directory);
-	system('mv '.$previous_directory.'* '.$current_directory);
-}
+// function rollback_files(){
+// 	// CP all in "current" to "preview" with overwrite.
+// 	// MV all in "previous" to "current".
+// 	global $current_directory;
+// 	global $preview_directory;
+// 	global $previous_directory;
+// 	system('cp -p '.$current_directory.'* '.$preview_directory);
+// 	system('mv '.$previous_directory.'* '.$current_directory);
+// }
 
-function all_filenames() {
-  global $source_parameters;
-  $result = array();
-  foreach($source_parameters as $key => $value){
-    array_push($result, $value['filename']);
-  }
-  return $result;
-}
+// function all_filenames() {
+//   global $source_parameters;
+//   $result = array();
+//   foreach($source_parameters as $key => $value){
+//     array_push($result, $value['filename']);
+//   }
+//   return $result;
+// }
 
 
 require_once('lib/controller_utilities.php');
