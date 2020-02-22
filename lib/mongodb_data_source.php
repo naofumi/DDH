@@ -598,21 +598,21 @@ class MongoDBDataSource {
   protected function upload_source($source_id, $source_path) {
     $benchstart = microtime(true);
     $message = "";
+    $line_counter = 0;
 
     if (array_search($source_id, $this->sources()) !== false) {
       $source_config = $this->source_parameters[$source_id];
-      $source_path = $source_path;
       $encoding = $source_config['encoding'];
       $delimiter = isset($source_config['delimiter']) ? $source_config['delimiter'] : ",";
       $updated_at = filemtime($source_path);
+
       
       $preview_snapshot = $this->snapshots->findOne(["published_at" => null]);
       if ($preview_snapshot &&
           isset($preview_snapshot['sources'][$source_id]) && 
-          $preview_snapshot['sources'][$source_id] == $updated_at ) {
+          ($preview_snapshot['sources'][$source_id] == $updated_at) ) {
           $message .= "$source_id updated at $updated_at is already loaded";
       } else {
-        $line_counter = 0;
         $batch_counter = 0;
         $batch_size = 1000;
         $batch = array();
@@ -663,7 +663,7 @@ class MongoDBDataSource {
                                           "sources.$source_id" => $updated_at]],
                                ['upsert' => true]);
 
-      return "$line_counter 行をデータベースにアップロードしました ".(microtime(true) - $benchstart)." 秒.<br>";
+      return "$message <br>$line_counter 行をデータベースにアップロードしました ".(microtime(true) - $benchstart)." 秒.<br>";
     } else {
       return "Error: $source_id が config.php で設定されていません";
     }
@@ -756,7 +756,9 @@ class MongoDBDataSource {
   }
 
   // Get the raw facet data and store in the $facets attribute. Not sorted or cached.
-  // Takes less than 30ms on reactivity:human, so it's OK to do the loops in PHP
+  // Takes a lot of time on the Cloud Clone data set because we are retrieving full data
+  // with retrieve_data(). Try to think of a way to do without calling retrieve data().
+  // TODO
   public function retrieve_facets() {
     $this->retrieve_data();
     $fields = $this->facet_fields;
