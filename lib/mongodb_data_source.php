@@ -737,14 +737,8 @@ class MongoDBDataSource {
         return $this->facets[$parameter_name];
       }
   	} else {
-      if ($this->maximum_results_was_reached()) {
-        // If $this->maximum_results_was_reached(),
-        // then it's no use showing facets anyway.
-        return array();
-      } else {
-        $this->retrieve_facets();
-        return $this->facets($parameter_name);     
-      }
+      $this->retrieve_facets();
+      return $this->facets($parameter_name);     
   	}
   }
 
@@ -758,31 +752,41 @@ class MongoDBDataSource {
   // Get the raw facet data and store in the $facets attribute. Not sorted or cached.
   // Takes a lot of time on the Cloud Clone data set because we are retrieving full data
   // with retrieve_data(). Try to think of a way to do without calling retrieve data().
-  // TODO
+  // TODO: We may need to put this into the queried data source
   public function retrieve_facets() {
-    $this->retrieve_data();
-    $fields = $this->facet_fields;
-
     $start_time = microtime(TRUE);
+    $source_id = $this->query_target;
 
+    $snapshot = $this->snapshot();
+    $source_updated_at = $snapshot['sources'][$source_id];
+
+    $mongodb_query = $this->mongodb_query();
+    array_push($mongodb_query['$and'],
+               ['updated_at' => $source_updated_at]);
+
+    $fields = $this->facet_fields;
     $result = array();
     // Initialize $results array
     foreach($fields as $field) {
       $result[$field] = array();
     }
+
     // Count facets
     foreach($fields as $field) {
       // Initial aggregation of data using
-      // full string matching.
-      foreach ($this->data as $row) {
-        $value = $row->get_raw($field);
-        if (!$value)
-          continue;
+      // mongodb aggregation.
+      $mongodb_result = $this->db->$source_id->aggregate(['$match' => $mongodb_query], 
+                            ['$group' => [
+                              '_id' => ['value' => '$row.'.$field], 
+                              'count' => ['$sum' => 1]]
+                            ]);
 
-        if (!isset($result[$field][$value])) {
-          $result[$field][$value] = 0;
+      foreach ($mongodb_result['result'] as $mongodb_result_row) {
+        if (array_key_exists('value', $mongodb_result_row['_id'])) {
+          $value = $mongodb_result_row['_id']['value'];
+          $count = $mongodb_result_row['count'];
+          $result[$field][$value] = $count;          
         }
-        $result[$field][$value]++;
       }
 
       // Secondary aggregation of data using
@@ -793,10 +797,10 @@ class MongoDBDataSource {
     }
 
     $end_time = microtime(TRUE);
-    error_log("BENCHMARK retrieve_facets(calculate facets from data): ".($end_time - $start_time));
     $this->facets = $result;
 
     $this->sort_facets();
+    error_log("BENCHMARK retrieve_facets(calculate facets from data): ".($end_time - $start_time));
 
     return $this->facets;
   }
