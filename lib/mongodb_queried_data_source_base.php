@@ -209,6 +209,7 @@ abstract class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
 
   // Retrieve all data
   // Do update_by_query() to get all the ids and then join from all other data sources.
+  // Cached in $this->data
   protected function retrieve_data() {
     if (!isset($this->data)){
       $start_time = microtime(TRUE);
