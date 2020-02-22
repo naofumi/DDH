@@ -178,7 +178,7 @@
   <form enctype="multipart/form-data" action="" method="POST">
     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION["csrf_token"]?>">
     <!-- MAX_FILE_SIZE (in bytes) must precede the file input field -->
-    <input type="hidden" name="MAX_FILE_SIZE" value="50000000" />
+    <input type="hidden" name="MAX_FILE_SIZE" value="200000000" />
     <!-- Name of input element determines name in $_FILES array -->
     ファイルを選択: <input name="userfile" type="file" />
     <input type="submit" value="アップロード" />
