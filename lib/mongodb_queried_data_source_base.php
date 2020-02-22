@@ -207,6 +207,8 @@ abstract class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
     return ($a_len < $b_len ? 1 : -1);    
   }
 
+  // Retrieve all data
+  // Do update_by_query() to get all the ids and then join from all other data sources.
   protected function retrieve_data() {
     if (!isset($this->data)){
       $start_time = microtime(TRUE);
@@ -233,6 +235,9 @@ abstract class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
   }
 
   // This is where the query actually happens.
+  // TODO: We could significanly reduce memory usage by integrating the
+  //       get_assoc_list_for_query() function and the update_data_with_assoc_list() function.
+  //       These functions pass data via $assoc_list which should not be necessary.
   protected function update_by_query() {
 
     $assoc_list = $this->get_assoc_list_for_query();
