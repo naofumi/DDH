@@ -64,32 +64,32 @@ if (ini_get('magic_quotes_gpc')) {
 /// Functions to retrieve data from the CSV files for preview
 /////////////////////////////////////////////////
 
-function get_row_count($source, $encoding) {
-  $iconv_path = $GLOBALS["iconv_path"];
-  if (!$iconv_path) {
-    die ('$iconv_path is not set in config.php');
-  }
+// function get_row_count($source, $encoding) {
+//   $iconv_path = $GLOBALS["iconv_path"];
+//   if (!$iconv_path) {
+//     die ('$iconv_path is not set in config.php');
+//   }
 
-  return exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | wc -l");
-}
+//   return exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | wc -l");
+// }
 
-function get_rows($start = 0, $limit = 100, $source, $encoding, $delimiter) {
-  $iconv_path = $GLOBALS["iconv_path"];
-  if (!$iconv_path) {
-    die ('$iconv_path is not set in config.php');
-  }
+// function get_rows($start = 0, $limit = 100, $source, $encoding, $delimiter) {
+//   $iconv_path = $GLOBALS["iconv_path"];
+//   if (!$iconv_path) {
+//     die ('$iconv_path is not set in config.php');
+//   }
 
-  $start = $start + 1; // sed counts the first line as 1
-  $end = $start + $limit - 1;
-  $result = array();
-  $lines = array();
-  exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | sed -n '$start,${end} p'", $lines);
-  foreach ($lines as $line) {
-    $row = str_getcsv($line, $delimiter);
-    array_push($result, $row);
-  }
-  return $result;
-}
+//   $start = $start + 1; // sed counts the first line as 1
+//   $end = $start + $limit - 1;
+//   $result = array();
+//   $lines = array();
+//   exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | sed -n '$start,${end} p'", $lines);
+//   foreach ($lines as $line) {
+//     $row = str_getcsv($line, $delimiter);
+//     array_push($result, $row);
+//   }
+//   return $result;
+// }
 
 // Convert each cell in the row from $encoding to 'UTF-8'
 function row_convert_encoding($row, $encoding) {
