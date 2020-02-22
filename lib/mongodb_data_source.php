@@ -898,6 +898,12 @@ class MongoDBDataSource {
 
   ////////////////////////////////////////////////
   // Functions for pagination
+  //
+  // Since we work with rowspans, it is actually
+  // very difficult to implement pagination
+  // and we don't do real pagination.
+  // All we do is limit the maximum number of
+  // results.
   ////////////////////////////////////////////////
   public function set_maximum_results($maximum_results) {
     $this->maximum_results = $maximum_results;
