@@ -7,16 +7,16 @@
 //////////////////////////////////////
 // For Search
 //////////////////////////////////////
-function text_entry_control($parameter_name, $label_html) {
+function text_entry_control($parameter_name, $label_html, $attributes = array()) {
 ?>
   <div class="query_menu text_entry_control <?= $parameter_name ?>">
     <label for="<?= $parameter_name ?>"><?= $label_html ?></label>
-    <?php echo text_field($parameter_name) ?>
+    <?php echo text_field($parameter_name, $attributes) ?>
   </div>
 <?php
 }
 
-function select_menu_control($parameter_name, $label_html, $data_source, $default = null, $sort_callback = false) {
+function select_menu_control($parameter_name, $label_html, $data_source, $default = null, $sort_callback = false, $attributes = array()) {
 ?>
   <div class="query_menu select_menu_control <?= $parameter_name ?>">
     <label for="<?= $parameter_name ?>"><?= $label_html ?></label>
@@ -25,7 +25,7 @@ function select_menu_control($parameter_name, $label_html, $data_source, $defaul
       if ($sort_callback !== false) {
         uksort($facets, $sort_callback);
       }
-      select_tag_with_facet($parameter_name, $facets, null, $default);
+      select_tag_with_facet($parameter_name, $facets, $attributes, $default);
     ?>
   </div>
 <?php
