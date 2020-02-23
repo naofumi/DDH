@@ -8,6 +8,7 @@
   // must match the format that we have specified in
   // the config file (filenames must be consistent).
   // Uploaded files are automatically 
+  $suppress_reverse_proxy_requirement = true;
   require(dirname(__FILE__).'/jsonp.php');
 
   authenticate();
