@@ -146,6 +146,7 @@ function is_assoc($array) {
 }
 
 function to_currency($number) {
+  $no_comma_number = str_replace(",", "", $number);
   setlocale(LC_MONETARY, 'ja_JP');
-  return money_format("&yen;%!i", $number);
+  return money_format("&yen;%!i", $no_comma_number);
 }
