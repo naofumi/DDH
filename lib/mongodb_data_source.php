@@ -764,6 +764,7 @@ class MongoDBDataSource {
   //
   // TODO: We may need to put this into the queried data source
   public function retrieve_facets() {
+    $start_time = microtime(TRUE);
     $source_id = $this->query_target;
 
     $snapshot = $this->snapshot();
@@ -779,34 +780,38 @@ class MongoDBDataSource {
       $result[$field] = array();
     }
 
-    // Count facets
+    $facets = [];
     foreach($fields as $field) {
-      $start_time = microtime(TRUE);
-      // Initial aggregation of data using
-      // mongodb aggregation.
-      $mongodb_result = $this->db->$source_id->aggregate([
-        ['$match' => $mongodb_query], 
-        ['$group' => ['_id' => ['value' => "\$row.$field"], 
-                      'count' => ['$sum' => 1]]]
-      ], ['allowDiskUse' => true]);
+      $facets[$field] = [['$sortByCount' => "\$row.$field"]];
+      // array_push($facets, ['$sortByCount' => "\$row.$field"]);
+    }
 
-      foreach ($mongodb_result as $mongodb_result_row) {
-        if (array_key_exists('value', $mongodb_result_row['_id'])) {
-          $value = $mongodb_result_row['_id']['value'];
-          $count = $mongodb_result_row['count'];
-          $result[$field][$value] = $count;          
+
+    // Initial aggregation of data using
+    // mongodb aggregation.
+    $mongodb_result = $this->db->$source_id->aggregate([
+      ['$match' => $mongodb_query], 
+      ['$facet' => $facets]
+    ]);
+    // Not sure if we are parsing the $mongodb_result correctly.
+    foreach($mongodb_result as $document) {
+      foreach($document as $field_name => $value_counts) {
+        foreach($value_counts as $value_count) {
+          $result[$field_name][$value_count['_id']] = $value_count['count'];
         }
       }
+    }
 
+    foreach($fields as $field) {
       // Secondary aggregation of data using
       // settings in field_values.php
       if (settings_for_field($field)) {
         $result[$field] = $this->aggregate_counts_using_settings($result[$field], settings_for_field($field))['result'];
       }
 
-      $end_time = microtime(TRUE);
-      benchtime_log("retrieve_facets() for $field",$end_time - $start_time);
     }
+    $end_time = microtime(TRUE);
+    benchtime_log("retrieve_facets()",$end_time - $start_time);
 
     $this->facets = $result;
 
