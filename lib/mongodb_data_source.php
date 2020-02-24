@@ -848,7 +848,7 @@ class MongoDBDataSource {
   }
 
   //////// Functions for table display /////////
-
+  //
 	// Add $field."_rowspan" keys to $data_source to allow
 	// the table to be displayed using rowspans for 
 	// repetitive cells. If $field."_rowspan" is "-1"

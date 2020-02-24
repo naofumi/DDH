@@ -1,7 +1,11 @@
 <?php
-// cell is used to insert data into
-// cells.
-
+// cell.php is the end-point that is used for per-cell JSONP embedding.
+// https://bitbucket.org/castle104/ddh/wiki/JSONPEmbed
+// This takes the 'reqs' parameter and returns javascript
+// that fills cells based on this.
+// If the CSV file contains a 'campaign_javascript_file' field,
+// then this will also be loaded onto the calling HTML page, allowing
+// us to modify the page to look more campaign-like.
   require('jsonp.php');
   header('Content-Type: application/javascript');
   
