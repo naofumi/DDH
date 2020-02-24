@@ -137,7 +137,7 @@
         </table>
       </td>
       <td>
-        <strong>php array</strong>
+        <strong>php array (you can paste this into config/field_values.php)</strong>
         <pre style="border:solid 1px black;padding:5px;">
 [
 <?php foreach ($row_value_count_in_source as $key => $value): ?>
