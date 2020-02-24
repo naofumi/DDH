@@ -82,6 +82,8 @@ abstract class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
   // for preview purposes.
   // Usually, you would use `preview_version()` to get the version in
   // the controller (jsonp.php).
+  //
+  // If the query is an empty array, then all rows will be retrieved.
   function __construct($source_parameters, $query = array(), $query_target, $snapshot_version) {
     parent::__construct($source_parameters, $snapshot_version);
     $this->raw_query = $query;

@@ -6,11 +6,16 @@ require_once(dirname(__FILE__).'/mongodb_queried_data_source_base.php');
 // field.
 //
 // ['field_name' => 'query_keyword', 'field_name' => 'query_keyword', ...]
+//
+// Retrieve all by specifying an empty array as the query.
 class MongoDBAndQueriedDataSource extends MongoDBQueriedDataSourceBase {
  
   // mongodb_query() analyzed $this->query and 
   // converts it into a mongodb query format using $this->partial_match_fields
   // $this->combo_fields, and expanded_queries.
+  //
+  // If $this->query is an empty array, the the return value will also be
+  // an empty array, which will mean that we retrieve all values.
   protected function mongodb_query() {
     $mongodb_query = array();
     $partial_match_fields = $this->partial_match_fields;
