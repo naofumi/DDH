@@ -28,10 +28,24 @@ A proper reverse proxy would probably work so we should be able to access admin 
 
 ## Server Setup
 
+### Software versions
 The current DDH code has been tested on the following.
-1. PHP: 5.5.9
-2. OS: Ubuntu 14.04 Trusty
-3. MongoDB: 3.4.23
+1. PHP: 7.2.24
+2. OS: Ubuntu 18.04
+3. MongoDB: 3.6.3
+
+### `php.ini` settings
+Settings for `php.ini`
+memory_limit = 500M
+max_execution_time = 180
+upload_max_filesize = 200M
+post_max_sizeb = 200M
+
+### Software installation
+1. apache2 php 
+2. mongodb php driver
+3. conmposer : package manager for PHP. Used for high-level MongoDB driver installation
+
 
 ## Documentation
 
