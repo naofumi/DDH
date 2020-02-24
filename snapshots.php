@@ -113,7 +113,7 @@
           <tr>
             <th class="<?php echo isset($snapshot['current']) && $snapshot['current'] ? 'current_snapshot' : '' ?>">
               <?php if (isset($snapshot['current']) && $snapshot['current']) {echo "<span style='color:red'>公開中</span>";} ?>
-              <?php echo date("Y-m-d H:i:s", $published_at) ?> 初公開バージョン<?php echo $published_at ?>
+              <?php echo date("Y-m-d H:i:s", $published_at) ?> に初公開のバージョン<?php echo $published_at ?>
               <form action="" method=post style="display:inline">
                 <input type="hidden" name="csrf_token" value="<?php echo $_SESSION["csrf_token"]?>">
                 <?php if(!isset($snapshot['current']) || !$snapshot['current']): ?>
