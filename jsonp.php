@@ -1,5 +1,6 @@
 <?php
 $bench_start = microtime(true);
+require(dirname(__FILE__).'/vendor/autoload.php');
 
 require_once(dirname(__FILE__).'/Cache/Lite.php');
 require_once(dirname(__FILE__).'/lib/mongodb_data_source.php');
