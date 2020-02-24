@@ -210,7 +210,7 @@ class MongoDBDataSource {
       }
 
       $end_time = microtime(TRUE);
-      error_log("BENCHMARK values_in_field_of_source($field, $source_id): ".($end_time - $start_time));
+      benchtime_log("values_in_field_of_source($field, $source_id)", $end_time - $start_time);
       $this->all_values_in_field_of_source_cache[$source_id][$field] = $result;
     }
 
@@ -337,7 +337,7 @@ class MongoDBDataSource {
     }
     $this->sorted = true;
     $end_time = microtime(TRUE);
-    error_log("BENCHTIME sort_callback ".($end_time - $sort_start_time));
+    benchtime_log("sort_callback", $end_time - $sort_start_time);
   }
 
   // Update $this->data with the data from a single $source_id 
@@ -755,12 +755,15 @@ class MongoDBDataSource {
     return $this->total_rows() && !$this->maximum_results_was_reached();
   }
 
-  // Get the raw facet data and store in the $facets attribute. Not sorted or cached.
-  // Takes a lot of time on the Cloud Clone data set because we are retrieving full data
-  // with retrieve_data(). Try to think of a way to do without calling retrieve data().
+  // Retrieve all facets from the current query and store in the $facets attribute.
+  // First get the raw facet data from mongoDB aggregations.
+  // Then further aggregate/collate the results using the settings_for_field.
+  // This function takes a lot of time since we are currently
+  // going through the full collection (often with regex) with each MongoDB aggregation.
+  // We need to use MongoDB $facet to reduce time.
+  //
   // TODO: We may need to put this into the queried data source
   public function retrieve_facets() {
-    $start_time = microtime(TRUE);
     $source_id = $this->query_target;
 
     $snapshot = $this->snapshot();
@@ -778,6 +781,7 @@ class MongoDBDataSource {
 
     // Count facets
     foreach($fields as $field) {
+      $start_time = microtime(TRUE);
       // Initial aggregation of data using
       // mongodb aggregation.
       $mongodb_result = $this->db->$source_id->aggregate([
@@ -799,13 +803,14 @@ class MongoDBDataSource {
       if (settings_for_field($field)) {
         $result[$field] = $this->aggregate_counts_using_settings($result[$field], settings_for_field($field))['result'];
       }
+
+      $end_time = microtime(TRUE);
+      benchtime_log("retrieve_facets() for $field",$end_time - $start_time);
     }
 
-    $end_time = microtime(TRUE);
     $this->facets = $result;
 
     $this->sort_facets();
-    error_log("BENCHMARK retrieve_facets(calculate facets from data): ".($end_time - $start_time));
 
     return $this->facets;
   }
@@ -816,6 +821,7 @@ class MongoDBDataSource {
   // then that order will be used. Otherwise
   // we will not re-sort (hence facets will be returned in order of the results)
   public function sort_facets() {
+    $start_time = microtime(TRUE);
     $result = $this->facets;
     $fields = $this->facet_fields;
     foreach ($fields as $field) {
@@ -824,6 +830,8 @@ class MongoDBDataSource {
       }
     }
     $this->facets = $result;
+    $end_time = microtime(TRUE);
+    benchtime_log("sort_facets()",$end_time - $start_time);
     return $this->facets;
   }
 
@@ -886,7 +894,7 @@ class MongoDBDataSource {
 	    $previous_id = $id;
 	  }
     $end_time = microtime(TRUE);
-    error_log("BENCHMARK add_rowspans(): ".($end_time - $start_time));
+    benchtime_log("add_rowspans()", $end_time - $start_time);
 	  return $this;
 	}
 

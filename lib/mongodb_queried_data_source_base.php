@@ -220,7 +220,7 @@ abstract class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
       // First get the data for the query_target and set $this->ids
       $this->update_by_query();
       $end_time = microtime(TRUE);
-      error_log("BENCHMARK update_by_query(do the query on query target): ".($end_time - $start_time));
+      benchtime_log("update_by_query(do the query on query target)", $end_time - $start_time);
 
       // Join the other data sources
       $join_other_start_time = microtime(TRUE);
@@ -230,10 +230,10 @@ abstract class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
           continue;
         $this->update_from_source_id($source_id);
         $data_source_end_time = microtime(TRUE);
-        error_log("BENCHTIME join data source $source_id: ".($data_source_end_time - $data_source_start_time));
+        benchtime_log("join data source $source_id: ", $data_source_end_time - $data_source_start_time);
       }
       $end_time = microtime(TRUE);
-      error_log("BENCHTIME update_from_source_id(join allother data sources): ".($end_time - $join_other_start_time));
+      benchtime_log("update_from_source_id(join allother data sources): ", $end_time - $join_other_start_time);
     }
   }
 
