@@ -6,9 +6,9 @@
  * www.Vork.us
  * www.MongoDB.org
  *
- * @version 1.1.2
+ * @version 1.1.5
  * @author Eric David Benari, Chief Architect, phpMoAdmin
- * @license GPL v3 - http://vork.us/go/mvz5
+ * @license GPL v3 - https://www.gnu.org/licenses/gpl-3.0.en.html
  */
 
 /**
@@ -294,7 +294,8 @@ class moadminModel {
      */
     protected function _mongo() {
         $connection = (!MONGO_CONNECTION ? 'mongodb://localhost:27017' : MONGO_CONNECTION);
-        return (!REPLICA_SET ? new Mongo($connection) : new Mongo($connection, array('replicaSet' => true)));
+        $Mongo = (class_exists('MongoClient') === true ? 'MongoClient' : 'Mongo');
+        return (!REPLICA_SET ? new $Mongo($connection) : new $Mongo($connection, array('replicaSet' => true)));
     }
 
     /**
@@ -385,8 +386,10 @@ class moadminModel {
      */
     public function getStats() {
         $admin = $this->_db->selectDB('admin');
-        $return = array_merge($admin->command(array('buildinfo' => 1)),
-                              $admin->command(array('serverStatus' => 1)));
+        $return = $admin->command(array('buildinfo' => 1));
+        try {
+            $return = array_merge($return, $admin->command(array('serverStatus' => 1)));
+        } catch (MongoCursorException $e) {}
         $profile = $admin->command(array('profile' => -1));
         $return['profilingLevel'] = $profile['was'];
         $return['mongoDbTotalSize'] = round($this->totalDbSize / 1000000) . 'mb';
@@ -397,12 +400,16 @@ class moadminModel {
             $return['previousDbErrors']['error'] = $prevError['err'];
             $return['previousDbErrors']['numberOfOperationsAgo'] = $prevError['nPrev'];
         }
-        $return['globalLock']['totalTime'] .= ' &#0181;Sec';
-        $return['uptime'] = round($return['uptime'] / 60) . ':' . str_pad($return['uptime'] % 60, 2, '0', STR_PAD_LEFT)
-                          . ' minutes';
+        if (isset($return['globalLock']['totalTime'])) {
+            $return['globalLock']['totalTime'] .= ' &#0181;Sec';
+        }
+        if (isset($return['uptime'])) {
+            $return['uptime'] = round($return['uptime'] / 60) . ':' . str_pad($return['uptime'] % 60, 2, '0', STR_PAD_LEFT)
+                              . ' minutes';
+        }
         $unshift['mongo'] = $return['version'] . ' (' . $return['bits'] . '-bit)';
         $unshift['mongoPhpDriver'] = Mongo::VERSION;
-        $unshift['phpMoAdmin'] = '1.0.9';
+        $unshift['phpMoAdmin'] = '1.1.4';
         $unshift['php'] = PHP_VERSION . ' (' . (PHP_INT_MAX > 2200000000 ? 64 : 32) . '-bit)';
         $unshift['gitVersion'] = $return['gitVersion'];
         unset($return['ok'], $return['version'], $return['gitVersion'], $return['bits']);
@@ -916,7 +923,7 @@ class htmlHelper {
                 case 'cssSingleton':
                 case 'jqueryTheme':
                     if ($tagType == 'jqueryTheme') {
-                        $arg = 'http://ajax.googleapis.com/ajax/libs/jqueryui/1/themes/'
+                        $arg = $this->_protocol . 'ajax.googleapis.com/ajax/libs/jqueryui/1/themes/'
                              . str_replace(' ', '-', strtolower($arg)) . '/jquery-ui.css';
                         $tagType = 'css';
                     }
@@ -1132,8 +1139,7 @@ class htmlHelper {
                 $return .= PHP_EOL . (is_array($head) ? implode(PHP_EOL, $head) : $head);
             }
 
-            $return .= PHP_EOL . '</head>' . PHP_EOL . '<body>'
-					. $this->js('https://GoChat.us/chat.js#identity=5047dd509c3a8dd8fec07b5b&appid=phpmoadmin.com');
+            $return .= PHP_EOL . '</head>' . PHP_EOL . '<body>';
             return $return;
         } else {
             $errorMsg = 'Invalid usage of ' . __METHOD__ . '() - the header has already been returned';
@@ -1349,6 +1355,29 @@ var dom = function(id) {
      */
     public function alternator() {
         return $this->isEven(++$this->alternator);
+    }
+
+    /**
+     * Creates a list from an array with automatic nesting
+     *
+     * @param array $list
+     * @param string $kvDelimiter Optional, sets delimiter to appear between keys and values
+     * @param string $listType Optional, must be a valid HTML list type, either "ul" (default) or "ol"
+     * @return string
+     */
+    public function drillDownList(array $list, $kvDelimiter = ': ', $listType = 'ul') {
+        foreach ($list as $key => $val) {
+            $val = (is_array($val) ? $this->drillDownList($val, $kvDelimiter, $listType) : $val);
+            $str = trim($key && !is_int($key) ? $key . $kvDelimiter . $val : $val);
+            if ($str) {
+                $return[] = $this->li($str);
+            }
+        }
+        if (isset($return)) {
+            return ($listType ? '<' . $listType . '>' : '')
+                 . implode(PHP_EOL, $return)
+                 . ($listType ? '</' . $listType . '>' : '');
+        }
     }
 
     /**
@@ -1959,35 +1988,48 @@ if (get_magic_quotes_gpc()) {
     $_POST = phpMoAdmin::stripslashes($_POST);
 }
 
-if (!isset($_GET['db'])) {
-    $_GET['db'] = moadminModel::$dbName;
-} else if (strpos($_GET['db'], '.') !== false) {
-    $_GET['db'] = $_GET['newdb'];
+if (isset($accessControl) && !isset($_SESSION['user']) && isset($_POST['username'])) {
+    $_POST = array_map('trim', $_POST);
+    if (isset($accessControl[$_POST['username']]) && $accessControl[$_POST['username']] == $_POST['password']) {
+        $_SESSION['user'] = $_POST['username'];
+    } else {
+        $_POST['errors']['username'] = 'Incorrect username or password';
+    }
 }
-try {
-    moadminComponent::$model = new moadminModel($_GET['db']);
-} catch(Exception $e) {
-    echo $e;
-    exit(0);
-}
+$isAuthenticated = (!isset($accessControl) || isset($_SESSION['user']));
+
 $html = get::helper('html');
 $ver = explode('.', phpversion());
 get::$isPhp523orNewer = ($ver[0] >= 5 && ($ver[1] > 2 || ($ver[1] == 2 && $ver[2] >= 3)));
 $form = new formHelper;
-$mo = new moadminComponent;
 
-if (isset($_GET['export']) && isset($mo->mongo['listRows'])) {
-    $rows = array();
-    foreach ($mo->mongo['listRows'] as $row) {
-        $rows[] = serialize($row);
+if ($isAuthenticated) {
+    if (!isset($_GET['db'])) {
+        $_GET['db'] = moadminModel::$dbName;
+    } else if (strpos($_GET['db'], '.') !== false) {
+        $_GET['db'] = $_GET['newdb'];
     }
-    $filename = get::htmlentities($_GET['db']);
-    if (isset($_GET['collection'])) {
-        $filename .= '~' . get::htmlentities($_GET['collection']);
+    try {
+        moadminComponent::$model = new moadminModel($_GET['db']);
+    } catch(Exception $e) {
+        echo $e;
+        exit(0);
     }
-    $filename .= '.json';
-    get::helper('json')->echoJson($rows, $filename);
-    exit(0);
+    $mo = new moadminComponent;
+
+    if (isset($_GET['export']) && isset($mo->mongo['listRows'])) {
+        $rows = array();
+        foreach ($mo->mongo['listRows'] as $row) {
+            $rows[] = serialize($row);
+        }
+        $filename = get::htmlentities($_GET['db']);
+        if (isset($_GET['collection'])) {
+            $filename .= '~' . get::htmlentities($_GET['collection']);
+        }
+        $filename .= '.json';
+        get::helper('json')->echoJson($rows, $filename);
+        exit(0);
+    }
 }
 
 /**
@@ -2056,7 +2098,7 @@ switch (THEME) {
         $headerArgs['cssInline'] .= '
 html {background: #261803;}
 h1, .rownumber {color: #baaa5a;}
-body {background: #4c3a1d url(http://jquery-ui.googlecode.com/svn/tags/1.7.2/themes/swanky-purse/images/ui-bg_diamond_25_675423_10x8.png) 50% 50% repeat;}
+body {background: #4c3a1d url(//jquery-ui.googlecode.com/svn/tags/1.7.2/themes/swanky-purse/images/ui-bg_diamond_25_675423_10x8.png) 50% 50% repeat;}
 #moadminlogo {color: #baaa5a;}
 li .ui-widget-header {margin: 0px 1px 0px 1px;}
 .ui-widget-header .rownumber {margin-top: 2px; margin-right: -1px;}';
@@ -2142,22 +2184,12 @@ echo '<div id="bodycontent" class="ui-widget-content"><h1 style="float: right;">
     . $html->link('http://www.phpmoadmin.com', $phpmoadmin, array('title' => 'phpMoAdmin')) . '</h1>';
 
 if (isset($accessControl) && !isset($_SESSION['user'])) {
-    if (isset($_POST['username'])) {
-        $_POST = array_map('trim', $_POST);
-        if (isset($accessControl[$_POST['username']]) && $accessControl[$_POST['username']] == $_POST['password']) {
-            $_SESSION['user'] = $_POST['username'];
-        } else {
-            $_POST['errors']['username'] = 'Incorrect username or password';
-        }
-    }
-    if (!isset($_SESSION['user'])) {
-        echo $form->open();
-        echo $html->div($form->input(array('name' => 'username', 'focus' => true)));
-        echo $html->div($form->password(array('name' => 'password')));
-        echo $html->div($form->submit(array('value' => 'Login', 'class' => 'ui-state-hover')));
-        echo $form->close();
-        exit(0);
-    }
+    echo $form->open();
+    echo $html->div($form->input(array('name' => 'username', 'focus' => true)));
+    echo $html->div($form->password(array('name' => 'password')));
+    echo $html->div($form->submit(array('value' => 'Login', 'class' => 'ui-state-hover')));
+    echo $form->close();
+    exit(0);
 }
 
 echo '<div id="dbcollnav">';
@@ -2212,9 +2244,9 @@ mo.confirm = function(dialog, func, title) {
     }
     mo.userFunc = func; //overcomes JS scope issues
     $("#confirm").html(dialog).attr("title", title).dialog({modal: true, buttons: {
-		"Yes": function() {$(this).dialog("close"); mo.userFunc();},
-		Cancel: function() {$(this).dialog("close");}
-	}}).dialog("open");
+        "Yes": function() {$(this).dialog("close"); mo.userFunc();},
+        Cancel: function() {$(this).dialog("close");}
+    }}).dialog("open");
 }
 ';
 echo $html->jsInline($js);
@@ -2362,11 +2394,19 @@ if (isset($mo->mongo['listRows'])) {
         $url = $baseUrl . '?' . http_build_query($get) . '&collection=' . urlencode($collection) . '&skip=';
         $paginator = number_format($skip + 1) . '-' . number_format(min($skip + $objCount, $mo->mongo['count']))
                    . ' of ' . $paginator;
+        $remainder = ($mo->mongo['count'] % $_SESSION['limit']);
+        $lastPage = ($mo->mongo['count'] - ($remainder ? $remainder : $_SESSION['limit']));
+        $isLastPage = ($mo->mongo['count'] <= ($objCount + $skip));
         if ($skip) { //back
-            $paginator = addslashes($html->link($url . max($skip - $objCount, 0), '&lt;&lt;&lt;')) . ' ' . $paginator;
+            $backPage = (!$isLastPage ? max($skip - $objCount, 0) : ($lastPage - $_SESSION['limit']));
+            $backLinks = $html->link($url . 0, '{{', array('title' => 'First')) . ' '
+                       . $html->link($url . $backPage, '&lt;&lt;&lt;', array('title' => 'Previous'));
+            $paginator = addslashes($backLinks) . ' ' . $paginator;
         }
-        if ($mo->mongo['count'] > ($objCount + $skip)) { //forward
-            $paginator .= ' ' . addslashes($html->link($url . ($skip + $objCount), '&gt;&gt;&gt;'));
+        if (!$isLastPage) { //forward
+            $forwardLinks = $html->link($url . ($skip + $objCount), '&gt;&gt;&gt;', array('title' => 'Next')) . ' '
+                          . $html->link($url . $lastPage, '}}', array('title' => 'Last'));
+            $paginator .= ' ' . addslashes($forwardLinks);
         }
     }
 
@@ -2401,7 +2441,7 @@ mo.submitSort = function() {
 }
 mo.submitSearch = function() {
     document.location = '" . $baseUrl . '?' . http_build_query($searchGet) . "&search='
-                      + $('#search').val() + '&searchField=' + $('#searchField').val();
+                      + encodeURIComponent($('#search').val()) + '&searchField=' + $('#searchField').val();
 }
 mo.submitQuery = function() {
     document.location = '" . $baseUrl . '?' . http_build_query($queryGet) . "&find=' + $('#find').val();
@@ -2581,21 +2621,7 @@ mo.submitQuery = function() {
         . '"min-height": "450px", "max-height": "2000px", "width": "auto", "height": "auto"}).resizable();
 ' . $dbcollnavJs);
 } else if (isset($mo->mongo['getStats'])) {
-    echo '<ul>';
-    foreach ($mo->mongo['getStats'] as $key => $val) {
-        echo '<li>';
-        if (!is_array($val)) {
-            echo $key . ': ' . $val;
-        } else {
-            echo $key . '<ul>';
-            foreach ($val as $subkey => $subval) {
-                echo $html->li($subkey . ': ' . $subval);
-            }
-            echo '</ul>';
-        }
-        echo '</li>';
-    }
-    echo '</ul>';
+    echo $html->drillDownList($mo->mongo['getStats']);
 }
 echo '</div>'; //end of bodycontent
 
