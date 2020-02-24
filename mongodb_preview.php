@@ -35,9 +35,10 @@
   }
   $per_page = 100;
   $total_pages = intval($row_count / $per_page) + 1;
-  $cursor = $collection->find(['updated_at' => (int)$updated_at])->
-                         sort(['row_num' => 1])->skip($start_from_row + ($page - 1) * $per_page)->limit($per_page);
-
+  $cursor = $collection->find(['updated_at' => (int)$updated_at],
+                              ['sort' => ['row_num' => 1],
+                               'skip' => $start_from_row + ($page - 1) * $per_page,
+                               'limit' => $per_page]);
   $rows = array();
   $id_field = $source_parameters[$source_id]['id_field'];
   foreach ($cursor as $id => $value) {

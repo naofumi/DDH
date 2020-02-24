@@ -67,7 +67,7 @@
       <table class="directory_view" style="width:100%">
         <?php $snapshot = $data_source->current_preview_snapshot() ?>
         <?php $uploaded_source_ids = $data_source->preview_snapshot() ? 
-                                     array_keys($data_source->preview_snapshot()['sources']) :
+                                     array_keys((array)$data_source->preview_snapshot()['sources']) :
                                      array(); ?>
         <tr>
           <th>

@@ -279,8 +279,7 @@ abstract class MongoDBQueriedDataSourceBase extends MongoDBDataSource {
     $source_updated_at = $snapshot['sources'][$source_id];
 
     $mongodb_query = $this->mongodb_query();
-    array_push($mongodb_query['$and'],
-               ['updated_at' => $source_updated_at]);
+    $mongodb_query['updated_at'] = $source_updated_at;
 
     error_log("mongodb_query: ");
     log_var_dump($mongodb_query);

@@ -154,7 +154,7 @@ class MongoDBDataSource {
     $this->snapshot_version = $snapshot_version;
     $this->source_parameters = $source_parameters;
     // Create a Mongo conenction
-    $this->mongo = new MongoClient();
+    $this->mongo = new MongoDB\Client();
     $this->db = $this->mongo->$db_name;
     $this->snapshots = $this->db->snapshots;
     // $this->snapshots->createIndex(array('published_at' => 1), array('unique' => true));
@@ -188,7 +188,9 @@ class MongoDBDataSource {
   // Will include values that we may not want to include in 
   // a select_tag like the header titles.
   //
-  // 
+  // TODO: This function may potentially be replaced
+  //       by a more generic function which specifies an
+  //       empty query. Consider deletion.
   public function all_values_in_field_of_source($field, $source_id) {
     if (!isset($this->all_values_in_field_of_source_cache[$source_id])) {
       $this->all_values_in_field_of_source_cache[$source_id] = array();
@@ -197,11 +199,11 @@ class MongoDBDataSource {
       $start_time = microtime(TRUE);
       $result = array();
 
-      $pipeline = ['$group' => ['_id' => '$row.'.$field, 'count' => ['$sum' => 1]]];
+      $pipeline = [['$group' => ['_id' => '$row.'.$field, 'count' => ['$sum' => 1]]]];
 
       $aggregated = $this->db->$source_id->aggregate($pipeline);
 
-      foreach ($aggregated['result'] as $row) {
+      foreach ($aggregated as $row) {
         $_id = $row['_id'];
         $count = $row['count'];
         $result[$_id] = $count;
@@ -357,9 +359,9 @@ class MongoDBDataSource {
     $source_updated_at = $snapshot['sources'][$source_id];
 
     $cursor = $this->db->$source_id->
-                find(['$and' => [['id' => ['$in' => $ids]],
-                                 ['updated_at' => $source_updated_at]]])->
-                sort(['row_num' => 1]);
+                find([['id' => ['$in' => $ids]],
+                                 ['updated_at' => $source_updated_at]],
+                     ['sort' => ['row_num' => 1]]);
     $id_field = $this->source_parameters[$source_id]['id_field'];
     foreach ($cursor as $id => $value) {
       $row = $value['row'];
@@ -423,7 +425,7 @@ class MongoDBDataSource {
   public function snapshots() {
     $result = array();
 
-    $cursor = $this->snapshots->find()->sort(['published_at' => -1]);
+    $cursor = $this->snapshots->find([], ['sort' => ['published_at' => -1]]);
     foreach ($cursor as $id => $value) {
       $published_at = $value['published_at'] ? $value['published_at'] : 'preview';
       $result[$published_at] = $value;
@@ -468,7 +470,7 @@ class MongoDBDataSource {
     $preview_snapshot = $this->preview_snapshot();
     $current_snapshot = $this->current_snapshot();
     if ($preview_snapshot) {
-      $new_sources = array_keys($preview_snapshot['sources']);
+      $new_sources = array_keys((array)$preview_snapshot['sources']);
       $all_sources = array_keys($this->source_parameters);
       foreach(array_diff($all_sources, $new_sources) as $source_only_in_current) {
         $preview_snapshot['sources'][$source_only_in_current] = $current_snapshot['sources'][$source_only_in_current];
@@ -550,9 +552,9 @@ class MongoDBDataSource {
     // it will change during the operation.
     $current_preview_snapshot = $this->current_preview_snapshot();
     if ($current_preview_snapshot != $this->current_snapshot()) {
-      $this->snapshots->update(["current" => 1],
+      $this->snapshots->findOneAndUpdate(["current" => 1],
                                ['$set' => ["current" => 0]]);
-      $this->snapshots->update(["published_at" => null],
+      $this->snapshots->findOneAndUpdate(["published_at" => null],
                                ['$set' => ["published_at" => time(),
                                            'current' => 1,
                                            'comment' => $comment,
@@ -564,9 +566,9 @@ class MongoDBDataSource {
     $snapshot_to_publish = $this->snapshots->findOne(["published_at" => (int)$published_at]);
     if ($snapshot_to_publish &&
         $this->current_snapshot() != $snapshot_to_publish) {
-      $this->snapshots->update(["current" => 1],
+      $this->snapshots->findOneAndUpdate(["current" => 1],
                                ['$set' => ["current" => 0]]);
-      $this->snapshots->update(["published_at" => (int)$published_at],
+      $this->snapshots->findOneAndUpdate(["published_at" => (int)$published_at],
                                ['$set' => ["current" => 1]]);
     }
   }
@@ -626,8 +628,8 @@ class MongoDBDataSource {
         // in case there were actually a duplication.
         // Therefore, we just don't enforce this and hope things work out.
         // $collection->ensureIndex(array('updated_at' => 1, 'id' => 1), array('unique' => true));
-        $collection->ensureIndex(array('updated_at' => 1, 'id' => 1));
-        $collection->ensureIndex(array('row_num' => 1));
+        $collection->createIndex(array('updated_at' => 1, 'id' => 1));
+        $collection->createIndex(array('row_num' => 1));
 
         $this->each_line_from_file($source_path, $encoding, function($line)
                               use ($delimiter, $updated_at, $source_config, 
@@ -645,20 +647,20 @@ class MongoDBDataSource {
 
           array_push($batch, $document);
           if (($batch_counter + 1) % $batch_size == 0) {
-            $collection->batchInsert($batch);
+            $collection->insertMany($batch);
             $batch = array();
           }
           $batch_counter = $batch_counter + 1;
           $line_counter = $line_counter + 1;
         });
         if (count($batch)) {
-          $collection->batchInsert($batch); // insert leftovers        
+          $collection->insertMany($batch); // insert leftovers        
         }        
       }
 
       // $preview_snapshot = $this->snapshots->findoOne(["published_at" => null]);
       // $sources
-      $this->snapshots->update(["published_at" => null], 
+      $this->snapshots->findOneAndUpdate(["published_at" => null], 
                                ['$set' =>["published_at" => null, 
                                           "sources.$source_id" => $updated_at]],
                                ['upsert' => true]);
@@ -765,8 +767,7 @@ class MongoDBDataSource {
     $source_updated_at = $snapshot['sources'][$source_id];
 
     $mongodb_query = $this->mongodb_query();
-    array_push($mongodb_query['$and'],
-               ['updated_at' => $source_updated_at]);
+    $mongodb_query['updated_at'] = $source_updated_at;
 
     $fields = $this->facet_fields;
     $result = array();
@@ -779,13 +780,13 @@ class MongoDBDataSource {
     foreach($fields as $field) {
       // Initial aggregation of data using
       // mongodb aggregation.
-      $mongodb_result = $this->db->$source_id->aggregate(['$match' => $mongodb_query], 
-                            ['$group' => [
-                              '_id' => ['value' => '$row.'.$field], 
-                              'count' => ['$sum' => 1]]
-                            ]);
+      $mongodb_result = $this->db->$source_id->aggregate([
+        ['$match' => $mongodb_query], 
+        ['$group' => ['_id' => ['value' => "\$row.$field"], 
+                      'count' => ['$sum' => 1]]]
+      ], ['allowDiskUse' => true]);
 
-      foreach ($mongodb_result['result'] as $mongodb_result_row) {
+      foreach ($mongodb_result as $mongodb_result_row) {
         if (array_key_exists('value', $mongodb_result_row['_id'])) {
           $value = $mongodb_result_row['_id']['value'];
           $count = $mongodb_result_row['count'];
