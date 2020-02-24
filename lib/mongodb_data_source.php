@@ -711,6 +711,10 @@ class MongoDBDataSource {
   // Set the labels of the fields that will be returned in 
   // the results from $this->facets().
   public function set_facet_fields($fields) {
+    $source_id = $this->query_target;
+    foreach ($fields as $field) {
+      $this->db->$source_id->createIndex(["row.$field" => 1]);
+    }
     $this->facet_fields = $fields;
   }
 
