@@ -8,7 +8,7 @@
 // `<script src="/ddh_jp/ddh/javascripts/ddh.js" async></script>`
 //
 !function(){
-  var basePath = "/dako-ddh/", // This is the base http request path of the DDH implementation directory.
+  var basePath = ddhBasePath || "/ddh_jp/", // This is the base http request path of the DDH implementation directory.
       d = document,
       s = "script",
       fjs=d.getElementsByTagName(s)[0], // First <script> tag

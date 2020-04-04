@@ -4,6 +4,13 @@ require(dirname(__FILE__).'/vendor/autoload.php');
 
 require_once(dirname(__FILE__).'/Cache/Lite.php');
 require_once(dirname(__FILE__).'/lib/mongodb_data_source.php');
+
+// Set $environment
+// The environment can be set in Apache VirtualHost directive.
+// See the Wiki for details.
+$environment = (isset($_SERVER['DDH_ENV']) ? $_SERVER['DDH_ENV'] : "development");
+
+
 require_once(dirname(__FILE__).'/../config.php');
 
 ///////////////////////////////////////////////
@@ -214,7 +221,7 @@ scripts = $scripts_as_js;
   var fjs = document.getElementsByTagName('script')[0];
   for (var i=0; i < scripts.length; i++) { 
     var js = document.createElement('script');
-    js.src = "/ddh_jp/javascripts/" + scripts[i];
+    js.src = "/$ddh_base_path/javascripts/" + scripts[i];
     js.setAttribute('async', 'true');
     fjs.parentNode.insertBefore(js, fjs);
   }
