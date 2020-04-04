@@ -6,9 +6,12 @@
 // If the CSV file contains a 'campaign_javascript_file' field,
 // then this will also be loaded onto the calling HTML page, allowing
 // us to modify the page to look more campaign-like.
+  $suppress_reverse_proxy_requirement = true;
   require('jsonp.php');
   header('Content-Type: application/javascript');
   
+  $no_cache = $_GET['nc'] ? true : false;
+
   // Process request params
   $cells = array();
   if ($_GET['reqs']) {
@@ -19,10 +22,13 @@
     }
   }
 
-  // Retrieve data from CSV files
+  // Retrieve data from MongoDB
   $data_source = new MongoDBDataSource($source_parameters, preview_version());
   $data_source->set_ids(array_keys($cells));
-  cache_start($data_source);
+  
+  if (!$no_cache) {
+    cache_start($data_source);
+  }
 
 
   // Generate output JSON and a list
@@ -32,11 +38,12 @@
   $scripts = array();
   foreach($data_source->ids() as $id) {
     foreach($cells[$id] as $field) {
+      $encoded_id = rawurlencode($id);
       if ($data_source->row($id)->get($field)) {
         if (is_preview()) {
-          $result[$id."_x_".$field] = "<span style='font-size:10px;color:red;'>$id - $field</span><span class='ddh_cell'>".$data_source->row($id)->get($field)."</span>";  
+          $result[$encoded_id."_x_".$field] = "<span style='font-size:10px;color:red;'>$id - $field</span><span class='ddh_cell'>".$data_source->row($id)->get($field)."</span>"; 
         } else {
-          $result[$id."_x_".$field] = "<span class='ddh_cell'>".$data_source->row($id)->get($field)."</span>";  
+          $result[$encoded_id."_x_".$field] = "<span class='ddh_cell'>".$data_source->row($id)->get($field)."</span>";  
         }
       }
     }
@@ -73,4 +80,6 @@ scripts = $scripts_as_js;
 JS;
 
   echo $output;
-  cache_end();
+  if (!$no_cache) {
+    cache_end();
+  }
