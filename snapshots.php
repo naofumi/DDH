@@ -8,8 +8,8 @@
 
   $snapshots = $data_source->snapshots();
 
-  // File was uploaded
   if ($_FILES) {
+    // File was upload
     $extension = strtolower(pathinfo($_FILES['userfile']['name'], PATHINFO_EXTENSION));
     if (($extension != 'csv') && ($extension != 'txt')) {
       echo '<div class="notice">';
@@ -24,8 +24,8 @@
       redirect_to();
     }
   } else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Publish button was pressed.
     if (isset($_POST['publish']) && $_POST['publish'] == 'preview') {
+      // Publish preview
       if ($data_source->current_preview_snapshot() == $data_source->current_snapshot()) {
         set_flash("Error: 現在公開中のスナップショットと同じです");
       } else {
@@ -34,7 +34,7 @@
       }
       redirect_to();
     } else if (isset($_POST['publish'])) {
-      // TODO: Put stuff to move files here
+      // Publish
       $data_source->publish_snapshot($_POST['publish']);
       set_flash("".date("Y-m-d H:i:s", $_POST['publish'])."のバージョンに戻しました");
       redirect_to();
@@ -52,7 +52,11 @@
         redirect_to();                
       }
     } else if (isset($_POST['drop_database'])) {
+      // Drop the database
       $data_source->db->drop();
+      redirect_to();
+    } else if (isset($_POST['clear_cache'])) {
+      cache_obj()->clean();
       redirect_to();
     }
   } else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -199,12 +203,16 @@
   </div>
 </fieldset>
 <fieldset>
-  <!-- TODO: デモ専用につき、あとで削除 -->
-  <legend>デモ専用のコントロール</legend>
+  <legend>初期化関連コントロール</legend>
   <form action="" method="POST" onsubmit="return confirm('本当にデータベースを初期化しますか?');">
     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION["csrf_token"]?>">
     <input type="hidden" name="drop_database" value="" />
     <input type="submit" value="データベースを初期化" />
+  </form>
+  <form action="" method="POST" onsubmit="return confirm('本当にキャッシュを消去しますか?');">
+    <input type="hidden" name="csrf_token" value="<?php echo $_SESSION["csrf_token"]?>">
+    <input type="hidden" name="clear_cache" value="" />
+    <input type="submit" value="キャッシュを消去" />
   </form>
 
 </fieldset>
