@@ -359,13 +359,12 @@ class MongoDBDataSource {
     $source_updated_at = $snapshot['sources'][$source_id];
 
     $cursor = $this->db->$source_id->
-                find([['id' => ['$in' => $ids]],
-                                 ['updated_at' => $source_updated_at]],
+                find(['id' => ['$in' => $ids], 
+                      'updated_at' => $source_updated_at],
                      ['sort' => ['row_num' => 1]]);
     $id_field = $this->source_parameters[$source_id]['id_field'];
     foreach ($cursor as $id => $value) {
       $row = $value['row'];
-
       $result[$row[$id_field]] = $row;
     }
     return $result;
