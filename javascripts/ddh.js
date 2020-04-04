@@ -8,7 +8,7 @@
 // `<script src="/ddh_jp/ddh/javascripts/ddh.js" async></script>`
 //
 !function(){
-  var basePath = "/ddh_jp/",
+  var basePath = "/dako-ddh/", // This is where the DDH calls will be directed to.
       d = document,
       s = "script",
       fjs=d.getElementsByTagName(s)[0], // First <script> tag
@@ -17,6 +17,7 @@
       jsidc = "ddhcelljs", // Id for per-cell embed <script> tag
       cn = "ddhwfe", // Class identifier for whole-fragment embed
       cl = "ddhcell", // Class identifier for per-cell embed
+      nc = "ddhnc", // Class identifier to prevent caching
       epc = "ddh/cell.php" // End point fo per-cell embed
 
   /* IE polyfill */ 
@@ -56,7 +57,8 @@
   // Per-cell embed
   !function(){
     var es=d.getElementsByClassName(cl),
-        rs=[];
+        rs=[],
+        cr;
     for(var i=0;i<es.length;i++){
       var e=es[i],
           cs=e.getAttribute('class').split(' ');
@@ -65,13 +67,14 @@
           rs.push(cs[j]);
         }
       }
+      cr=e.classList.contains(nc)?"&nc=1":"";
     };
     if (rs.length > 0) {
       var js;
       if(!d.getElementById(jsidc)){
         js=d.createElement(s);
         js.id=jsidc;
-        js.src=basePath+epc+"?reqs="+rs+pv;
+        js.src=basePath+epc+"?reqs="+rs+cr+pv;
         js.setAttribute('async', 'true');
         fjs.parentNode.insertBefore(js,fjs);
       }      
