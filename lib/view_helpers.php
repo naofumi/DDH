@@ -146,9 +146,16 @@ function is_assoc($array) {
 }
 
 function to_currency($number) {
-  $no_comma_number = str_replace(",", "", $number);
-  // Locales can be tricky. Ensure that the locale is generated
-  // on the server. https://www.shellhacks.com/linux-define-locale-language-settings/
-  setlocale(LC_MONETARY, 'ja_JP.utf8');
-  return money_format("&yen;%!.0n", $no_comma_number);
+  if ((float)$number) {
+    $no_comma_number = str_replace(",", "", $number);
+    // Locales can be tricky. Ensure that the locale is generated
+    // on the server. https://www.shellhacks.com/linux-define-locale-language-settings/
+    setlocale(LC_MONETARY, 'ja_JP.utf8');
+    return money_format("&yen;%!.0n", $no_comma_number);    
+  } else {
+    // Sometimes the price field can be something like "お問い合わせ"
+    // This section tries to capture these cases.
+    return $number;
+  }
+
 }

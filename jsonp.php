@@ -5,7 +5,7 @@ require(dirname(__FILE__).'/vendor/autoload.php');
 require_once(dirname(__FILE__).'/Cache/Lite.php');
 require_once(dirname(__FILE__).'/lib/mongodb_data_source.php');
 
-// Set $environment
+// Set $environment (global scope)
 // The environment can be set in Apache VirtualHost directive.
 // See the Wiki for details.
 $environment = (isset($_SERVER['DDH_ENV']) ? $_SERVER['DDH_ENV'] : "development");
