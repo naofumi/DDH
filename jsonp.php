@@ -1,7 +1,4 @@
 <?php
-/* 内部文字エンコーディングをUTF-8に設定 */
-mb_internal_encoding("UTF-8");
-
 $bench_start = microtime(true);
 require(dirname(__FILE__).'/vendor/autoload.php');
 
