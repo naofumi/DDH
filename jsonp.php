@@ -3,11 +3,33 @@
 mb_internal_encoding("UTF-8");
 
 $bench_start = microtime(true);
+require(dirname(__FILE__).'/vendor/autoload.php');
 
 require_once(dirname(__FILE__).'/Cache/Lite.php');
-require_once(dirname(__FILE__).'/data_source.php');
-require_once(dirname(__FILE__).'/queried_data_source.php');
+require_once(dirname(__FILE__).'/lib/mongodb_data_source.php');
+
+// Set $environment (global scope)
+// The environment can be set in Apache VirtualHost directive.
+// See the Wiki for details.
+$environment = (isset($_SERVER['DDH_ENV']) ? $_SERVER['DDH_ENV'] : "development");
+
+
 require_once(dirname(__FILE__).'/../config.php');
+
+///////////////////////////////////////////////
+//
+// Validate configuration
+//
+///////////////////////////////////////////////
+// Test $iconv_path
+if (exec("which iconv") != $iconv_path) {
+  die("iconv was not found in ".$iconv_path);
+}
+
+// Test gnugrep_path
+if (exec("which grep") != $gnugrep_path) {
+  die("grep was not found in ".$gnugrep_path);
+}
 
 ///////////////////////////////////////////////
 // Restrict access to proxies
@@ -21,7 +43,7 @@ require_once(dirname(__FILE__).'/../config.php');
 //
 // If you want direct access (typically in admin pages), then set
 // $suppress_reverse_proxy_requirement = true;
-// After including jsonp.php. We typically only do this inside `basic_auth()`
+// After including jsonp.php. We typically only do this inside `authenticate()`
 // so that only the restricted pages can be accessed directly.
 ///////////////////////////////////////////////
 
@@ -53,32 +75,32 @@ if (ini_get('magic_quotes_gpc')) {
 /// Functions to retrieve data from the CSV files for preview
 /////////////////////////////////////////////////
 
-function get_row_count($source, $encoding) {
-  $iconv_path = $GLOBALS["iconv_path"];
-  if (!$iconv_path) {
-    die ('$iconv_path is not set in config.php');
-  }
+// function get_row_count($source, $encoding) {
+//   $iconv_path = $GLOBALS["iconv_path"];
+//   if (!$iconv_path) {
+//     die ('$iconv_path is not set in config.php');
+//   }
 
-  return exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | wc -l");
-}
+//   return exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | wc -l");
+// }
 
-function get_rows($start = 0, $limit = 100, $source, $encoding, $delimiter) {
-  $iconv_path = $GLOBALS["iconv_path"];
-  if (!$iconv_path) {
-    die ('$iconv_path is not set in config.php');
-  }
+// function get_rows($start = 0, $limit = 100, $source, $encoding, $delimiter) {
+//   $iconv_path = $GLOBALS["iconv_path"];
+//   if (!$iconv_path) {
+//     die ('$iconv_path is not set in config.php');
+//   }
 
-  $start = $start + 1; // sed counts the first line as 1
-  $end = $start + $limit - 1;
-  $result = array();
-  $lines = array();
-  exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | sed -n '$start,${end} p'", $lines);
-  foreach ($lines as $line) {
-    $row = str_getcsv($line, $delimiter);
-    array_push($result, $row);
-  }
-  return $result;
-}
+//   $start = $start + 1; // sed counts the first line as 1
+//   $end = $start + $limit - 1;
+//   $result = array();
+//   $lines = array();
+//   exec("$iconv_path --from-code $encoding --to-code UTF-8 $source | sed -n '$start,${end} p'", $lines);
+//   foreach ($lines as $line) {
+//     $row = str_getcsv($line, $delimiter);
+//     array_push($result, $row);
+//   }
+//   return $result;
+// }
 
 // Convert each cell in the row from $encoding to 'UTF-8'
 function row_convert_encoding($row, $encoding) {
@@ -89,8 +111,39 @@ function row_convert_encoding($row, $encoding) {
 }
 
 
+//////////////////////////////////////////////////
+// Function for preview
+/////////////////////////////////////////////////
+
 function is_preview() {
-	return isset($_GET['pv']);
+  return !!(isset($_SESSION['preview']) && $_SESSION['preview']);
+	// return isset($_GET['pv']);
+}
+
+// For the current version, returns 'current'
+// For the preview version, returns 'preview'
+// Otherwise, returns the version timestamp
+function preview_version(){
+  if (isset($_SESSION['preview'])) {
+    if ($_SESSION['preview'] == 'preview') {
+      return 'preview';
+    } else {
+      return (int)$_SESSION['preview'];
+    }
+  } else {
+    return 'current';
+  }
+}
+
+// Human readable preview_version_name
+function preview_version_name() {
+  if (preview_version() == 'preview') {
+    return "準備中";
+  } else if (preview_version() == 'current') {
+    return "公開中";
+  } else {
+    return date("Y-m-d H:i:s", preview_version());
+  }
 }
 
 /////////////////////////////////////////////////
@@ -115,7 +168,7 @@ function insert_location(){
 function setup_cache(){
 	global $use_cache;
 	global $cache_directory;
-	if ($use_cache) {
+	if ($use_cache && !is_preview()) {
 		if (!file_exists ($cache_directory)) {
 			mkdir($cache_directory, 0755, true);
 		}
@@ -126,9 +179,7 @@ function setup_cache(){
 	}
 }
 
-// Cache key generated based on the last update file
-// in the current directory or preview directory, based
-// on is_preview().
+// Cache key generated based on the last snapshot.
 function cache_key($data_source){
 	return $_SERVER["REQUEST_URI"]."-".$data_source->last_updated_at();
 }
@@ -173,7 +224,7 @@ scripts = $scripts_as_js;
   var fjs = document.getElementsByTagName('script')[0];
   for (var i=0; i < scripts.length; i++) { 
     var js = document.createElement('script');
-    js.src = "/ddh_jp/javascripts/" + scripts[i];
+    js.src = "/$ddh_base_path/javascripts/" + scripts[i];
     js.setAttribute('async', 'true');
     fjs.parentNode.insertBefore(js, fjs);
   }
@@ -207,12 +258,13 @@ JS;
 
 function cache_start($data_source) {
   global $use_cache;
-  if (!$use_cache) {
+  if (!$use_cache || is_preview()) {
     return;
   }
 	if (isset($_GET['no_cache']))
 		return;
 
+  // Serve from cache if available
 	if ($cache = cache_obj()->get(cache_key($data_source))) {
     error_log("Served from cache.");
 	  echo $cache;
@@ -221,15 +273,18 @@ function cache_start($data_source) {
     error_log("Total time $bench_time secs.");
 	  exit;
 	}	
+  // Else continue and collect contents to buffer
   ob_start();
 }
 
 function cache_end() {
   global $use_cache;
-  if (!$use_cache) {
+  if (!$use_cache || is_preview()) {
     return;
   }
   global $bench_start;
+  // Get the contents from the buffer and save in cache,
+  // and then echo the results.
   $output = ob_get_contents();
   ob_end_clean();
 	cache_obj()->save($output);	
@@ -240,146 +295,55 @@ function cache_end() {
 
 //////////////////////////////////////////////////////////
 // Functions to change publish status
+// No longer used. Prepare to delete.
 /////////////////////////////////////////////////////////
-function publish_preview_files(){
-	global $current_directory;
-	global $preview_directory;
-	global $previous_directory;
-	global $source_parameters;
-  // 'cp -p' preserves timestamps
-	system('cp -p '.$current_directory.'* '.$previous_directory);
-	foreach($source_parameters as $key => $value) {
-		$path = $preview_directory.$value['filename'];
-		$destination = $current_directory.$value['filename'];
-		if (file_exists($path)) {
-  		rename($path, $destination);
-		}
-		// If file exists in $path, then move it to
-		// $destination. (removing it from "preview")
-	}
-}
+// function publish_preview_files(){
+// 	global $current_directory;
+// 	global $preview_directory;
+// 	global $previous_directory;
+// 	global $source_parameters;
+//   // 'cp -p' preserves timestamps
+// 	system('cp -p '.$current_directory.'* '.$previous_directory);
+// 	foreach($source_parameters as $key => $value) {
+// 		$path = $preview_directory.$value['filename'];
+// 		$destination = $current_directory.$value['filename'];
+// 		if (file_exists($path)) {
+//   		rename($path, $destination);
+// 		}
+// 		// If file exists in $path, then move it to
+// 		// $destination. (removing it from "preview")
+// 	}
+// }
 
-function rollback_files(){
-	// CP all in "current" to "preview" with overwrite.
-	// MV all in "previous" to "current".
-	global $current_directory;
-	global $preview_directory;
-	global $previous_directory;
-	system('cp -p '.$current_directory.'* '.$preview_directory);
-	system('mv '.$previous_directory.'* '.$current_directory);
-}
+// function rollback_files(){
+// 	// CP all in "current" to "preview" with overwrite.
+// 	// MV all in "previous" to "current".
+// 	global $current_directory;
+// 	global $preview_directory;
+// 	global $previous_directory;
+// 	system('cp -p '.$current_directory.'* '.$preview_directory);
+// 	system('mv '.$previous_directory.'* '.$current_directory);
+// }
 
-function all_filenames() {
-  global $source_parameters;
-  $result = array();
-  foreach($source_parameters as $key => $value){
-    array_push($result, $value['filename']);
-  }
-  return $result;
-}
+// function all_filenames() {
+//   global $source_parameters;
+//   $result = array();
+//   foreach($source_parameters as $key => $value){
+//     array_push($result, $value['filename']);
+//   }
+//   return $result;
+// }
 
 
-//////////////////////////////////////////////////////////
-// Controller utilities
-//////////////////////////////////////////////////////////
-function redirect_to($url = null) {
-	if (!$url) {
-		$url = $_SERVER["REQUEST_URI"];
-	}
-	header("Location: ".$url);
-	exit();
-}
+require_once('lib/controller_utilities.php');
 
-function set_flash($message) {
-	$_SESSION["flash"] = $message;
-}
+require_once('lib/url.php');
+require_once('lib/authentication.php');
+require_once('lib/logger.php');
+require_once('lib/csrf.php');
+require_once('lib/debug.php');
+require_once('lib/sorting.php');
 
-function echo_flash() {
-	if (isset($_SESSION["flash"]) && $_SESSION["flash"]) {
-		echo "<div class='notice'>".$_SESSION["flash"]."</div>";	
-		$_SESSION["flash"] = null;
-	}
-}
-
-function add_query_to_url($url, $params = array()) {
-	$original_query_string = array_lookup(parse_url($url), 'query');
-	$original_path = array_lookup(parse_url($url), 'path');
-	$original_params = array();
-	foreach(explode('&', $original_query_string) as $query_set) {
-		$single_param = explode('=', $query_set);
-		$original_params[urldecode($single_param[0])] = urldecode($single_param[1]);
-	}
-	return $original_path."?".http_build_query(array_merge($original_params, $params));
-}
-
-//////////////////////////////////////////////////////////
-// Basic Authentication
-//////////////////////////////////////////////////////////
-
-// http://www.webdesignleaves.com/wp/php/228/
-function basic_auth($users = false){
-  global $admin_users;
-  if ($users == false)
-    $users = $admin_users;
-  // We suppress reverse_proxy_requirement only for pages behind 
-  // authentication.
-  global $suppress_reverse_proxy_requirement;
-  $suppress_reverse_proxy_requirement = true;
-
-  if (isset($_SERVER['PHP_AUTH_USER']) and isset($_SERVER['PHP_AUTH_PW'])){
-    $user = $users[$_SERVER['PHP_AUTH_USER']];
-    if ($user) {
-      if (crypt($_SERVER['PHP_AUTH_PW'], $user["salt"]) == $user["hashed_password"]) {
-        return;
-      }
-    }
-  }
-  header('WWW-Authenticate: Basic realm="DDH Restricted Area"');
-  header('HTTP/1.0 401 Unauthorized');
-  header('Content-type: text/html; charset='.mb_internal_encoding());
-  die("Authorization Failed.");
-}
-
-///////////////////////////////////////////////////////////
-// Logging
-//////////////////////////////////////////////////////////
-function log_request() {
-	error_log($_SERVER['REQUEST_METHOD']." ".$_SERVER['REQUEST_URI']." Accept:".
-	          $_SERVER['HTTP_ACCEPT']." IP:".$_SERVER['REMOTE_ADDR']." Request:".var_export($_REQUEST, true).
-	          " Session:".var_export((defined('_SESSION') ? $_SESSION : null), true) );
-}
-
-///////////////////////////////////////////////////////////
-// CSFR token management
-///////////////////////////////////////////////////////////
-function renew_csrf_token(){
-  $_SESSION["csrf_token"] = md5(session_id());
-}
-
-function verify_csrf_token(){
-	if ($_SERVER['REQUEST_METHOD'] !== "GET") {
-		if ($_SESSION["csrf_token"] !== $_REQUEST["csrf_token"]) {
-			raise_csrf_error();
-		}
-	}
-}
-
-function raise_csrf_error(){
-	die("csrf_token does not match with SESSION:".$_SESSION["csrf_token"]." and REQUEST: ".$_REQUEST["csrf_token"]);
-}
-
-///////////////////////////////////////////
-// Debug
-//////////////////////////////////////////
-function str_var_dump($variable){
-	ob_start();
-	var_dump($variable);
-  return ob_get_clean();
-}
-
-function log_var_dump($variable){
-	error_log(str_var_dump($variable));
-}
 
 ////////////////////////////////////////////
 // Utility functions
@@ -413,8 +377,8 @@ if (!function_exists('str_getcsv')) {
 }
 
 // These are required last because they depend on the above functions.
-require_once(dirname(__FILE__).'/view_helpers.php');
-require_once(dirname(__FILE__).'/data_augmenters.php');
+require_once(dirname(__FILE__).'/lib/view_helpers.php');
+require_once(dirname(__FILE__).'/lib/high_level_view_helpers.php');
 
 ////////////////////////////////////////////////////////////
 // Initialize

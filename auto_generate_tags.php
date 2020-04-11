@@ -3,9 +3,9 @@
 
   $suppress_reverse_proxy_requirement = true;
   require(dirname(__FILE__).'/jsonp.php');
-  require(dirname(__FILE__).'/table_tagger.php');
+  require(dirname(__FILE__).'/lib/table_tagger.php');
 
-  basic_auth();
+  authenticate();
   $parameters = $_GET;
   if ($_GET['submit']) {
     $table_tagger = new TableTagger($parameters['original_html']);

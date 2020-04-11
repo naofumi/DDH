@@ -93,7 +93,7 @@ function dump_my_html_tree($node, $show_attr=true, $deep=0, $last=true) {
 
 <html <?=$lang?>>
 <head>
-    <?
+    <?php
         if ($lang!='')
             echo '<meta http-equiv="content-type" content="text/html; charset=utf-8"/>';
         else if ($charset)
@@ -132,7 +132,7 @@ function dump_my_html_tree($node, $show_attr=true, $deep=0, $last=true) {
     <br>
 	<div id="sidetreecontrol"><a href="?#">Collapse All</a> | <a href="?#">Expand All</a></div><br>
 	<ul class="treeview" id="html_tree">
-	    <?
+	    <?php
             ob_start();
             foreach($target as $e)
                 dump_my_html_tree($e, true);

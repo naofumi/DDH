@@ -2,74 +2,91 @@
   $suppress_reverse_proxy_requirement = true;
   require(dirname(__FILE__).'/jsonp.php');
 
-  $preview_directory = dirname(__FILE__).'/../data/preview/';
-  if (!file_exists($preview_directory) || !is_writable($preview_directory))
-    die("$preview_directory must be available and writable by Apache.");
-  $current_directory = dirname(__FILE__).'/../data/current/';
-  if (!file_exists($current_directory) || !is_writable($current_directory))
-    die("$current_directory must be available and writable by Apache.");
-  
-  $directories = array('preview' => $preview_directory, 'current' => $current_directory);
+  authenticate();
 
-  basic_auth();
+  $source_id = $_GET['source_id'];
+  $updated_at = $_GET['updated_at'];
+  $field = $_GET['field'];
+  $filter = $_GET['filter'];
+  $filter_value = $_GET['filter_value'];
 
-  if (isset($_GET['status'])) {
-    $directory = $directories[$_GET['status']];
-  }
+  $fields = $source_parameters[$source_id]['fields'];
 
-  if (isset($_GET['file'])) {
-    $file_identifier = preg_replace('/\.\./', '', $_GET['file']);
-    $file = $directory.$file_identifier;
+  $data_source = new MongoDBDataSource($source_parameters, 'current');
+  $collection = $data_source->db->$source_id;
+  $cursor = $collection->find(['updated_at' => (int)$updated_at]);
 
-    foreach($source_parameters as $key => $value) {
-      if ($value['filename'] == basename($file)) {
-        $fields = $value['fields'];
-        $encoding = $value['encoding'];
-        $delimiter = isset($value['delimiter']) ? $value['delimiter'] : ",";
+  // Go through all rows and count occurences of each value
+  $row_value_count_in_source = array();
+  if(isset($field)) {
+    $index = 1;
+    foreach ($cursor as $id => $value) {
+      $row = $value['row'];
+      if (isset($row[$field])) {
+        $value = $row[$field];
+      } else {
+        $value = null;
       }
+      if (isset($filter) && isset($row[$filter]) && 
+          !preg_match("/".$_GET['filter_value']."/i", $row[$filter])) {
+        continue;
+      }
+      if (isset($row_value_count_in_source[$value])) {
+        $row_value_count_in_source[$value] += 1;
+      } else {
+        $row_value_count_in_source[$value] = 1;
+      }
+      $index++;
     }    
   }
-    // $handle = popen("$iconv_path --from-code $encoding --to-code UTF-8//IGNORE//TRANSLIT $source | LANG_ALL=UTF-8 $gnugrep_path -i -P $escaped_regexp", "r");
-
-  $iconv_path = $GLOBALS["iconv_path"];
-  if (!$iconv_path) {
-    die ('$iconv_path is not set in config.php');
-  }
-  $result = array();
-  if (isset($_GET['field'])) {
-    $fh = popen("$iconv_path --from-code $encoding --to-code UTF-8//IGNORE//TRANSLIT $file", "r");
-    // $fh = fopen($file, "r");
-    $position = array_search($_GET['field'], $fields);
-    $filter_position = array_search($_GET['filter'], $fields);
-    if ($fh) {
-      $index = 1;
-      while ($line = fgets($fh)) {
-        $row = str_getcsv($line, $delimiter);
-        if (isset($row[$position])) {
-          $value = $row[$position];
-        } else {
-          $value = null;
-        }
-        if (isset($_GET['filter_value']) && isset($row[$filter_position]) && 
-            !preg_match("/".$_GET['filter_value']."/i", $row[$filter_position])) {
-          continue;
-        }
-        if (isset($result[$value])) {
-          $result[$value] = $result[$value] + 1;
-        } else {
-          $result[$value] = 1;
-        }
-        $index++;
-      }
-    }
-  }
-
+  uksort($row_value_count_in_source, "strnatcmp");
 
   include('header.php');
 ?>
 <?php echo_flash(); ?>
+<h1>
+  "<?php echo $source_id ?>" (<?php echo $updated_at ? date("Y-m-d H:i:s", $updated_at) : "準備中" ?> バージョン) ファイルの分析
+</h1>
 <fieldset>
-  <legend>全選択肢を調べるファイル</legend>
+  <legend>config/field_values.phpの分析</legend>
+  <p>
+    特殊な処理をしたいfieldについては、field_values.phpにフィールド値を列挙してある。その値が現在のCSVファイルとマッチしているかどうかを確認し、品質確認する必要がある。
+  </p>
+  <p>
+    「該当タグがない値」の中に、本当は選択できるようにしたい値があれば、field_values.phpを書き換えるか、もしくは元のCSVファイルを変更する。例えばCSVファイルの中で"マウス"と書いたり"ﾏｳｽ"と書いてしまっていたりしているのに、field_values.phpでは"マウス"のみを登録していると、「該当タグがない値」のところに"ﾏｳｽ"が出てしまう。<br>
+    「該当値がないタグ」はselect_tagなどに表示されないので、特に問題にはならないが、field_values.phpがわかりにくくなるので、もう使わないタグは外しておいたほうが良いだろう。
+  </p>
+  <table style="width: 90%">
+    <tr>
+      <th>フィールド</th>
+      <th>該当タグがない値</th>
+      <th>該当値がないタグ</th>
+    </tr>
+  <?php
+    $fields_to_analyse = array_intersect($fields, array_keys($field_settings));
+    foreach($fields_to_analyse as $field_to_analyse) {
+      $counts_for_field = $data_source->counts_for_field_of_source($field_to_analyse, $source_id);
+      ?>
+      <tr>
+        <th><?= $field_to_analyse ?></th>
+        <td><?= join(", ", $counts_for_field['uncaptured_values']) ?></td>
+        <td>
+          <?php
+            $tags_in_settings = tags_for_field($field_to_analyse);
+            $values_in_result = array_keys(array_filter($counts_for_field['result'], function($a) {return $a != 0;}));
+            $unused_tags = array_diff($tags_in_settings, $values_in_result);
+          ?>
+          <?= join(", ", $unused_tags) ?>
+        </td>
+      </tr>
+      <?php
+    }
+  ?>
+  </table>
+  <!-- counts_for_field_of_source -->
+</fieldset>
+<fieldset>
+  <legend>フィールド値の分析</legend>
   <p>
   DDHではフィールドの値そのものを使って検索を行うので、CSVファイルの中でどのようなフィールドが使われているかを知る必要がある。ここではそれを調べる。
   </p>
@@ -79,16 +96,8 @@
     <legend>対象ファイル、フィールド</legend>
     <form method="get">
       <input type="hidden" name="csrf_token" value="<?php echo $_SESSION["csrf_token"] ?>">
-      <div>
-        <label for="status">preview or current</label>
-        <?php select_tag('status', ['preview', 'current']) ?>
-      </div>
-      <div>
-        <?php if (isset($directory)): ?>
-          <label for="file">ファイル</label>
-          <?php select_tag('file', scandir($directory)) ?>
-        <?php endif; ?>
-      </div>
+      <input type="hidden" name="source_id" value="<?php echo $source_id ?>">
+      <input type="hidden" name="updated_at" value="<?php echo $updated_at ?>">
       <div>
         <?php if (isset($fields)): ?>
           <label for="field">field_symbol</label>
@@ -112,16 +121,32 @@
 <fieldset>
   <label>結果</label>
   <table>
-    <?php foreach($result as $key => $value): ?>
-      <tr>
-        <td>
-          <?php echo $key ?>
-        </td>
-        <td>
-          <?php echo $value ?>
-        </td>
-      </tr>
-    <?php endforeach; ?>
+    <tr>
+      <td>
+        <table>
+          <?php foreach($row_value_count_in_source as $key => $value): ?>
+            <tr>
+              <td>
+                <?php echo $key ?>
+              </td>
+              <td>
+                <?php echo $value ?>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </table>
+      </td>
+      <td>
+        <strong>php array (you can paste this into config/field_values.php)</strong>
+        <pre style="border:solid 1px black;padding:5px;">
+[
+<?php foreach ($row_value_count_in_source as $key => $value): ?>
+  <?php echo "\"$key\" => null, // count $value</br>" ?>
+<?php endforeach; ?>
+]
+        </pre>
+      </td>
+    </tr>
   </table>
 </fieldset>
 <?php include('footer.php') ?>

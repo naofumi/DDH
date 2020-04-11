@@ -46,8 +46,8 @@ $source_parameters = array(
 // "salt" is 16-letters, must start with "$6$" for CRYPT_SHA512
 //
 // Register accounts with login id as the key.
-// You can restrict access by calling `basic_auth($admin_users)`
-// or `basic_auth($dealer_users)` depending on which users
+// You can restrict access by calling `authenticate($admin_users)`
+// or `authenticate($dealer_users)` depending on which users
 // you want to grant access to.
 $admin_users = array("boo" => array("salt" => "$6$2asd8xi1coasd", 
                                     "hashed_password" => crypt("hoo", $salt)));

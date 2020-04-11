@@ -1,10 +1,17 @@
 <?php
-// cell is used to insert data into
-// cells.
-
+// cell.php is the end-point that is used for per-cell JSONP embedding.
+// https://bitbucket.org/castle104/ddh/wiki/JSONPEmbed
+// This takes the 'reqs' parameter and returns javascript
+// that fills cells based on this.
+// If the CSV file contains a 'campaign_javascript_file' field,
+// then this will also be loaded onto the calling HTML page, allowing
+// us to modify the page to look more campaign-like.
+  $suppress_reverse_proxy_requirement = true;
   require('jsonp.php');
   header('Content-Type: application/javascript');
   
+  $no_cache = $_GET['nc'] ? true : false;
+
   // Process request params
   $cells = array();
   if ($_GET['reqs']) {
@@ -15,10 +22,13 @@
     }
   }
 
-  // Retrieve data from CSV files
-  $data_source = new DataSource($source_parameters, array_keys($cells));
-
-  cache_start($data_source);
+  // Retrieve data from MongoDB
+  $data_source = new MongoDBDataSource($source_parameters, preview_version());
+  $data_source->set_ids(array_keys($cells));
+  
+  if (!$no_cache) {
+    cache_start($data_source);
+  }
 
 
   // Generate output JSON and a list
@@ -28,11 +38,12 @@
   $scripts = array();
   foreach($data_source->ids() as $id) {
     foreach($cells[$id] as $field) {
+      $encoded_id = rawurlencode($id);
       if ($data_source->row($id)->get($field)) {
         if (is_preview()) {
-          $result[$id."_x_".$field] = "<span style='font-size:10px;color:red;'>$id - $field</span><span class='ddh_campaign'>".$data_source->row($id)->get($field)."</span>";  
+          $result[$encoded_id."_x_".$field] = "<span style='font-size:10px;color:red;'>$id - $field</span><span class='ddh_cell'>".$data_source->row($id)->get($field)."</span>"; 
         } else {
-          $result[$id."_x_".$field] = "<span class='ddh_campaign'>".$data_source->row($id)->get($field)."</span>";  
+          $result[$encoded_id."_x_".$field] = "<span class='ddh_cell'>".$data_source->row($id)->get($field)."</span>";  
         }
       }
     }
@@ -69,4 +80,6 @@ scripts = $scripts_as_js;
 JS;
 
   echo $output;
-  cache_end();
+  if (!$no_cache) {
+    cache_end();
+  }
