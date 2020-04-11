@@ -42,7 +42,7 @@ function select_tag($name, $options = array(), $attributes = array(), $default =
     if (!$is_assoc_options) {
       $value = $tag;
     }
-    if (isset($_REQUEST[$name]) && strtolower($_REQUEST[$name]) === strtolower($value)) {
+    if (isset($_REQUEST[$name]) && mb_strtolower($_REQUEST[$name]) === mb_strtolower($value)) {
       $selected = " selected";
     } else if (!isset($_REQUEST[$name]) && $default == $value) {
       $selected = " selected";
